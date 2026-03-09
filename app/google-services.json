@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "638085344231",
+    "project_id": "curemegpt",
+    "storage_bucket": "curemegpt.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:638085344231:android:4eab77f4832120ad402b42",
+        "android_client_info": {
+          "package_name": "com.bussiness.curemegptapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD08xlM4F0nZWiW8UY0XL-1dJ7BF1HFdcY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
