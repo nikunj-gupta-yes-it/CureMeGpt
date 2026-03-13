@@ -441,12 +441,16 @@ fun HistoryStep(
                     }
 
                     viewModel.updateMedicalHistory(
+                        onSuccess = {
+                            onNext()
+                        },
+                        onError = { msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() },
                         chronicConditions = conditionsList,
                         surgicalHistory = surgicalHistory,
                         currentMedications = currentMedications.filter { it.isNotBlank() },
                         currentSupplements = currentSupplements.filter { it.isNotBlank() }
                     )
-                    onNext()
+
                 }
             }
         )

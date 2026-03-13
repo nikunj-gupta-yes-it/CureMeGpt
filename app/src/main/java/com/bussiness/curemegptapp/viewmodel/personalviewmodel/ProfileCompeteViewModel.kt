@@ -1,4 +1,6 @@
 package com.bussiness.curemegptapp.viewmodel.personalviewmodel
+import android.content.Context
+import android.net.Uri
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -10,6 +12,7 @@ import com.bussiness.curemegptapp.repository.Resource
 import com.bussiness.curemegptapp.ui.uistate.PersonalUiState
 import com.bussiness.curemegptapp.util.LoaderManager
 import com.bussiness.curemegptapp.util.SessionManager
+import com.bussiness.curemegptapp.util.UriToRequestBody.uriToMultipart
 import com.bussiness.curemegptapp.util.ValidationUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
@@ -21,7 +24,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-open class ProfileCompeteViewModel @Inject constructor(private val repository: Repository, private val sessionManager: SessionManager) : ViewModel() {
+open class ProfileCompeteViewModel @Inject constructor(private val repository: Repository,
+                                                       private val sessionManager: SessionManager) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PersonalUiState())
     val uiState = _uiState.asStateFlow()
@@ -35,6 +39,16 @@ open class ProfileCompeteViewModel @Inject constructor(private val repository: R
     fun onPhoneChange(value: String) {
     //    _uiState.value = _uiState.value.copy(phone = value)
           _uiState.value = _uiState.value.copy(phoneCopy = value)
+    }
+
+    fun onEmailVerified(){
+        _uiState.value = _uiState.value.copy(emailVerify = true)
+        _uiState.value =_uiState.value.copy(email = _uiState.value.emailCopy)
+    }
+
+    fun onPhoneVerified(){
+        _uiState.value = _uiState.value.copy(phoneVerify = true)
+        _uiState.value =_uiState.value.copy(phone = _uiState.value.phoneCopy)
     }
 
     fun onEmailChange(value: String) {
@@ -115,15 +129,20 @@ open class ProfileCompeteViewModel @Inject constructor(private val repository: R
     }
 
 
-    fun verifyEmailPhoneRequest(onError: (String) -> Unit,
+    fun verifyEmailPhoneRequest(onSuccess: (otpValue:String) -> Unit,onError: (String) -> Unit,
                                 emailOrPhone: String){
         viewModelScope.launch {
+            LoaderManager.show()
             repository.verifyEmailPhoneRequest(emailOrPhone).collect {
                 when(it){
+
                     is NetworkResult.Success ->{
+                        LoaderManager.hide()
                         currentOtp = it.data.toString()
+                        onSuccess(currentOtp)
                     }
                     is NetworkResult.Error ->{
+                        LoaderManager.hide()
                         onError(it.message.toString())
                     }
                     else ->{
@@ -201,7 +220,7 @@ open class ProfileCompeteViewModel @Inject constructor(private val repository: R
 
 
 
-    fun updatePersonalRequest(onSuccess: (User) -> Unit, onError: (String) -> Unit){
+    fun updatePersonalRequest(context: Context, onSuccess: (User) -> Unit, onError: (String) -> Unit){
         val state = _uiState.value
         val nameValidation = ValidationUtils.validateName(state.name)
         val phoneValidation = ValidationUtils.validatePhone(state.phone)
@@ -213,14 +232,14 @@ open class ProfileCompeteViewModel @Inject constructor(private val repository: R
             onError(nameValidation.errorMessage)
             return
         }
-        if (!phoneValidation.isValid) {
-            onError(phoneValidation.errorMessage)
-            return
-        }
-        if (!emailValidation.isValid) {
-            onError(emailValidation.errorMessage)
-            return
-        }
+//        if (!phoneValidation.isValid) {
+//            onError(phoneValidation.errorMessage)
+//            return
+//        }
+//        if (!emailValidation.isValid) {
+//            onError(emailValidation.errorMessage)
+//            return
+//        }
         if (!dobValidation.isValid) {
             onError(dobValidation.errorMessage)
             return
@@ -246,10 +265,17 @@ open class ProfileCompeteViewModel @Inject constructor(private val repository: R
         state.email = _uiState.value.emailCopy
         state.phone =_uiState.value.phoneCopy
 
-
+        val imagePath = state.imageProfilePath
+        val part = if (!imagePath.isNullOrEmpty()) {
+            val uri = Uri.parse(imagePath)
+            uriToMultipart(context, uri, "profile_image")
+        } else {
+            null
+        }
 
         viewModelScope.launch {
-            repository.updatePersonalRequest(state.name,state.phone,state.email,state.dob,state.gender,state.height,state.heightType,state.weight,state.weightType)
+            repository.updatePersonalRequest(state.name,state.phone,state.email,state.dob,state.gender,state.height,state.heightType,state.weight,
+                state.weightType,part)
                 .collectLatest { result ->
                     when (result) {
                         is Resource.Loading -> {
@@ -269,6 +295,7 @@ open class ProfileCompeteViewModel @Inject constructor(private val repository: R
                                     heightType = "Cm",
                                     weight = userData.weight ?: "",
                                     weightType = "Kg",
+
                                 )
                                 onSuccess(userData)
                             }

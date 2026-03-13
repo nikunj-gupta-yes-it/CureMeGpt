@@ -1,5 +1,6 @@
 package com.bussiness.curemegptapp.ui.screen.auth.profileCompletion
 
+import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -49,8 +50,29 @@ fun DocumentsStep(
     val filePickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments()
     ) { uris ->
-        uris?.forEach { uri ->
-            viewModel.addUploadedFile(uri)
+        val maxSize = 2 * 1024 * 1024 // 2MB
+
+        uris.forEach { uri ->
+
+            val cursor = context.contentResolver.query(uri, arrayOf(OpenableColumns.SIZE),
+                null, null, null)
+
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val sizeIndex = it.getColumnIndex(OpenableColumns.SIZE)
+                    val fileSize = it.getLong(sizeIndex)
+
+                    if (fileSize <= maxSize) {
+                        viewModel.addUploadedFile(uri)
+                    } else {
+                        Toast.makeText(
+                            context,
+                            "File must be less than 2MB",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            }
         }
     }
 
@@ -154,30 +176,28 @@ fun DocumentsStep(
         GradientButton(
             text = stringResource(R.string.button_get_started),//"Get Started",
             onClick = {
-                viewModel.submitProfile()
+                viewModel.submitProfile(context,onSuccess = {
+                    val toastMessage = context.getString(R.string.profile_completed_toast)
+                    Toast.makeText(
+                        context,
+                        toastMessage,
+                        Toast.LENGTH_LONG
+                    ).show()
+                    onNext()           
+                },
+                    onError = {
+                         Toast.makeText(context,it,Toast.LENGTH_LONG).show()
+                    }
+         )
 
                 // Toast show karein summary
-                val summary = """
-                    Profile Completed!
-                    Name: ${profileData.fullName}
-                    Contact: ${profileData.contactNumber}
-                    Email: ${profileData.email}
-                    Files: ${profileData.uploadedFiles.size}
-                """.trimIndent()
+
                 // Create toast message
-                val toastMessage = context.getString(R.string.profile_completed_toast)
-                Toast.makeText(
-                    context,
-                    toastMessage,
-                    Toast.LENGTH_LONG
-                ).show()
-                onNext()
+
 
             }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
-
-
     }
 }

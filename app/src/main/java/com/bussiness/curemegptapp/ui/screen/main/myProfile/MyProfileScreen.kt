@@ -10,6 +10,7 @@ import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -60,6 +61,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -75,6 +77,8 @@ import com.bussiness.curemegptapp.ui.theme.AppGradientColors
 import com.bussiness.curemegptapp.ui.viewModel.main.Document
 import com.bussiness.curemegptapp.ui.viewModel.main.FamilyMember
 import com.bussiness.curemegptapp.ui.viewModel.main.MyProfileViewModel
+import com.bussiness.curemegptapp.util.DownloadUtils
+import com.bussiness.curemegptapp.util.UriToRequestBody
 import com.canhub.cropper.CropImage.CancelledResult.uriContent
 import com.canhub.cropper.CropImageContract
 import com.canhub.cropper.CropImageContractOptions
@@ -83,7 +87,7 @@ import com.canhub.cropper.CropImageOptions
 @Composable
 fun MyProfileScreen(
     navController: NavHostController,
-    viewModel: MyProfileViewModel = viewModel()
+    viewModel: MyProfileViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     var bitmap: Bitmap? by remember { mutableStateOf(null) }
@@ -101,7 +105,39 @@ fun MyProfileScreen(
             result.uriContent?.let { uri ->
                 // Process the cropped image
                 imageUri = uri
-                selectedProfilePhotoUri = uri // यहाँ हम selected photo URI set कर रहे हैं
+
+                val maxSize = 2 * 1024 * 1024 // 2MB
+
+                val cursor = context.contentResolver.query(
+                    uri,
+                    arrayOf(OpenableColumns.SIZE),
+                    null,
+                    null,
+                    null
+                )
+
+                var fileSize = 0L
+
+                cursor?.use {
+                    if (it.moveToFirst()) {
+                        val sizeIndex = it.getColumnIndex(OpenableColumns.SIZE)
+                        fileSize = it.getLong(sizeIndex)
+                    }
+                }
+
+                if (fileSize > maxSize) {
+                    Toast.makeText(context, "Image must be less than 2MB", Toast.LENGTH_SHORT).show()
+                    return@let
+                }
+
+                selectedProfilePhotoUri = uri
+                UriToRequestBody.uriToMultipart(context,uri,"profile_image")?.let { requestBody ->
+                    viewModel.uploadProfilePhoto(requestBody,onSuccess = {
+                        Toast.makeText(context, "Profile photo updated successfully", Toast.LENGTH_SHORT).show()
+                    }, onError = { error ->
+                        Toast.makeText(context, "Failed to upload photo: $error", Toast.LENGTH_SHORT).show()
+                    })
+                }
 
                 // Bitmap process करें (अगर जरूरी हो)
                 if (Build.VERSION.SDK_INT < 28) {
@@ -111,8 +147,7 @@ fun MyProfileScreen(
                     bitmap = ImageDecoder.decodeBitmap(source)
                 }
 
-                // यहाँ आप viewModel में save कर सकते हैं (अगर चाहें)
-                // viewModel.saveProfilePhoto(uri.toString())
+
             }
         } else {
             // Handle error
@@ -177,8 +212,8 @@ fun MyProfileScreen(
                 onSettingClick = {
                     navController.navigate(AppDestination.SettingsScreen)
                 },
-                onDownloadClick = { documentId ->
-                    // Handle download
+                onDownloadClick = { documentUrl ->
+                          DownloadUtils.downloadFile(context,documentUrl,"profile_document_${System.currentTimeMillis()}")
                 },
                 openProfilePhotoPicker = {
                     showPhotoSheet = true
@@ -369,14 +404,27 @@ fun ProfileContent(
                                 contentScale = ContentScale.Crop
                             )
                         } else {
-                            Image(
-                                painter = painterResource(id = R.drawable.ic_profile_image),
-                                contentDescription = stringResource(R.string.profile_photo_description, member.name),
+//                            Image(
+//                                    painter = painterResource(id = R.drawable.ic_profile_image),
+//                            contentDescription = stringResource(R.string.profile_photo_description, member.name),
+//                            modifier = Modifier
+//                                .fillMaxSize()
+//                                .clip(CircleShape),
+//                            contentScale = ContentScale.Crop
+//                            )
+
+                            AsyncImage(
+                                model = member.profileImage,
+                                contentDescription = stringResource(
+                                    R.string.profile_photo_description,
+                                    member.name
+                                ),
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .clip(CircleShape),
                                 contentScale = ContentScale.Crop
                             )
+
                         }
                     }
 
@@ -464,7 +512,7 @@ fun ProfileContent(
             member.documents.forEach { document ->
                 DocumentItem(
                     document = document,
-                    onDownloadClick = { onDownloadClick(document.id) }
+                    onDownloadClick = { onDownloadClick(document.fileUrl) }
                 )
             }
             Spacer(modifier = Modifier.height(32.dp))

@@ -86,21 +86,20 @@ fun PersonalInfoStep(viewModel: ProfileCompeteViewModel, onNext: () -> Unit) {
     if (showEmailOTPDialog) {
         OTPVerificationDialog(
             onDismiss = { showEmailOTPDialog = false },
-            onVerify = { otp ->
-                viewModel.verifyOtpRequest(
-                    value = state.emailCopy,
-                    otp = otp,
-                    onSuccess = {
-                        Toast.makeText(context, "Email verified successfully!", Toast.LENGTH_SHORT).show()
-                        showEmailOTPDialog = false
-                    },
-                    onError = { error ->
-                        Toast.makeText(context, "Verification failed: $error", Toast.LENGTH_SHORT).show()
-                    }
-                )
+            onVerify = {otp ->
+
+                if(otp.equals(viewModel.currentOtp)){
+                    viewModel.onEmailVerified()
+                    showEmailOTPDialog= false
+                    Toast.makeText(context, "Email verified successfully!", Toast.LENGTH_SHORT).show()
+                }
+
+                else{
+                    Toast.makeText(context, "Please Enter Valid Otp", Toast.LENGTH_SHORT).show()
+                }
             },
-            title = "Verify Email",
-            message = "Enter the OTP sent to your email"
+             title = "Verify Email",
+             message = "Enter the OTP sent to your email"
         )
     }
 
@@ -109,15 +108,19 @@ fun PersonalInfoStep(viewModel: ProfileCompeteViewModel, onNext: () -> Unit) {
             onDismiss = { showPhoneOTPDialog = false },
             onVerify = { otp ->
                           if(otp.equals(viewModel.currentOtp)){
+                              viewModel.onPhoneVerified()
+                              showPhoneOTPDialog= false
+
                               Toast.makeText(context, "Phone verified successfully!", Toast.LENGTH_SHORT).show()
                           }else{
-                              Toast.makeText(context, "Please Enter Valid Password", Toast.LENGTH_SHORT).show()
+                              Toast.makeText(context, "Please Enter Valid Otp", Toast.LENGTH_SHORT).show()
                           }
                        },
             title = "Verify Phone",
             message = "Enter the OTP sent to your phone"
         )
     }
+
     val profilePhotoPickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             uri?.let {
                 viewModel.onImagePathChange(it.toString())
@@ -143,19 +146,24 @@ fun PersonalInfoStep(viewModel: ProfileCompeteViewModel, onNext: () -> Unit) {
             value = state.phoneCopy,
             onValueChange = {
                            viewModel.onPhoneChange(it)
-                            },
+             },
             keyboardType = KeyboardType.Phone,
             enable = state.phone.isBlank(),
             showVerifyBadge = state.phone.isBlank(),
             onVerifyClick = {
-                viewModel.sendOtpRequest(
-                    onSuccess = {
+                if (state.phoneCopy.isNotBlank() && !state.phoneCopy.matches(Regex("^[0-9]{10}$"))) {
+                    Toast.makeText(context, "Please enter a valid 10-digit phone number", Toast.LENGTH_SHORT).show()
+                    return@ProfileInputField
+                }
+                viewModel.verifyEmailPhoneRequest(
+                    onSuccess = { otp ->
                         showPhoneOTPDialog = true
+                        Toast.makeText(context, "OTP sent to your phone " + otp, Toast.LENGTH_SHORT).show()
                     },
                     onError = { error ->
                         Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
                     },
-                    value = state.phoneCopy
+                    state.phoneCopy
                 )
             }
         )
@@ -173,7 +181,18 @@ fun PersonalInfoStep(viewModel: ProfileCompeteViewModel, onNext: () -> Unit) {
             enable = state.email.isBlank(),
             showVerifyBadge = state.email.isBlank(),
             onVerifyClick = {
+
+                if(!Patterns.EMAIL_ADDRESS.matcher(state.emailCopy).matches()){
+                    Toast.makeText(context, "Please enter a valid email address", Toast.LENGTH_SHORT).show()
+                    return@ProfileInputField
+                }
+
                 viewModel.verifyEmailPhoneRequest(
+                    onSuccess = { otp -> {
+                        showEmailOTPDialog = true
+                        Toast.makeText(context, "OTP sent to your email " + otp, Toast.LENGTH_SHORT).show()
+                    }
+                 },
                     onError = { error ->
                         Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
                     },
@@ -287,6 +306,7 @@ fun PersonalInfoStep(viewModel: ProfileCompeteViewModel, onNext: () -> Unit) {
                     onNext()
                 }*/
                 viewModel.updatePersonalRequest(
+                    context,
                     onError = { msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() },
                     onSuccess = {
                         onNext()

@@ -1,12 +1,16 @@
 package com.bussiness.curemegptapp.di
 
 import com.bussiness.curemegptapp.apiendpoint.ApiEndPoint
+import com.bussiness.curemegptapp.apimodel.OnBoardingModel.OnboardingItem
+import com.bussiness.curemegptapp.apimodel.OnBoardingModel.OnboardingResponse
 import com.bussiness.curemegptapp.apimodel.loginmodel.LoginResponse
 import com.bussiness.curemegptapp.apimodel.personalmodel.PersonalModel
 import com.bussiness.curemegptapp.apimodel.personalmodel.ProfileResponse
+import com.bussiness.curemegptapp.apimodel.profilemodel.UserProfileResponse
 import kotlinx.serialization.json.JsonObject
 import com.google.gson.JsonObject as GsonJsonObject
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Response
@@ -78,13 +82,14 @@ interface ApiService {
     @Multipart
     @POST(ApiEndPoint.COMPLETE_PERSONAL_URL)
     suspend fun updatePersonalRequest(
-        @Part("name") nameBody: RequestBody,
-        @Part("phone") phoneBody: RequestBody,
+        @Part("full_name") nameBody: RequestBody,
+        @Part("contact_number") phoneBody: RequestBody,
         @Part("email") emailBody: RequestBody,
         @Part("dob") dobBody: RequestBody,
         @Part("gender") genderBody: RequestBody,
         @Part("height") heightBody: RequestBody,
-        @Part("weight") weightBody: RequestBody
+        @Part("weight") weightBody: RequestBody,
+        @Part profile_image:  MultipartBody.Part?
     ): Response<PersonalModel>
 
     @FormUrlEncoded
@@ -103,6 +108,56 @@ interface ApiService {
     ): Response<GsonJsonObject>
 
 
+    @FormUrlEncoded
+    @POST("complete_general_profile_history")
+    suspend fun completeGeneralProfileHistoryRequest(
+        @Field("chronic_condition[]") chronicConditions: String,
+        @Field("surgical_history") surgicalHistory: String,
+        @Field("current_medications[]") currentMedication: String,
+        @Field("current_supplements[]") currentSupplement : String
+    ): Response<ProfileResponse>
 
 
+    @Multipart
+    @POST("complete_profile_documents")
+    suspend fun completeProfileDocumentsRequest(
+        @Part files: List<MultipartBody.Part>
+    ): Response<ProfileResponse>
+
+
+
+    @POST("onboarding_data")
+    suspend fun onBoardingData() :Response<OnboardingResponse>
+
+    @POST("get_user_details")
+    suspend fun getUserDetails() : Response<GsonJsonObject>
+
+
+    @Multipart
+    @POST("update_profile_picture")
+    suspend fun updateProfilePicture(
+        @Part profile_image: MultipartBody.Part
+    ) : Response<GsonJsonObject>
+
+
+    @POST("faqs")
+    suspend fun getFAQs() : Response<GsonJsonObject>
+
+    @POST("privacy_policy")
+    suspend fun getPrivacyPolicy() : Response<GsonJsonObject>
+
+     @POST("terms_condition")
+    suspend fun getTermsConditions() : Response<GsonJsonObject>
+
+
+    @POST("account_privacy")
+    suspend fun getAccountPrivacy() : Response<GsonJsonObject>
+
+    @POST("account_privacy")
+    suspend fun getAccountPrivacyPolicy() : Response<GsonJsonObject>
+
+    @POST("help_support")
+    suspend fun helpSupport() : Response<GsonJsonObject>
+    @POST("about_us")
+    suspend fun  aboutUs() : Response<GsonJsonObject>
 }

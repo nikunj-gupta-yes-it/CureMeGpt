@@ -278,11 +278,14 @@ fun DatesGrid(
     selectedDate: LocalDate?,
     onSelectDate: (LocalDate) -> Unit
 ) {
+
     val weeks = remember(currentMonth) { buildMonthMatrix(currentMonth) }
+    val today = LocalDate.now()
 
     Column(modifier = Modifier.fillMaxWidth()) {
 
         weeks.forEach { week ->
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -293,7 +296,7 @@ fun DatesGrid(
 
                     Box(
                         modifier = Modifier
-                            .weight(1f)        // ⭐ SAME AS HEADER → PERFECT ALIGNMENT
+                            .weight(1f)
                             .height(44.dp),
                         contentAlignment = Alignment.Center
                     ) {
@@ -301,22 +304,34 @@ fun DatesGrid(
                         if (date != null) {
 
                             val isSelected = selectedDate == date
+                            val isFutureDate = date.isAfter(today)
 
                             Box(
                                 modifier = Modifier
                                     .size(42.dp)
                                     .clip(CircleShape)
-                                    .clickable( interactionSource = remember { MutableInteractionSource() },
-                                        indication = null) { onSelectDate(date) }
+                                    .clickable(
+                                        enabled = !isFutureDate,
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) {
+                                        onSelectDate(date)
+                                    }
                                     .background(
-                                        if (isSelected) Color(0xFF4A35C9) else Color.Transparent
+                                        if (isSelected) Color(0xFF4A35C9)
+                                        else Color.Transparent
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
+
                                 Text(
                                     text = date.dayOfMonth.toString(),
                                     fontSize = 15.sp,
-                                    color = if (isSelected) Color.White else Color.Black
+                                    color = when {
+                                        isSelected -> Color.White
+                                        isFutureDate -> Color.LightGray
+                                        else -> Color.Black
+                                    }
                                 )
                             }
                         }
@@ -326,6 +341,63 @@ fun DatesGrid(
         }
     }
 }
+
+
+//@RequiresApi(Build.VERSION_CODES.O)
+//@Composable
+//fun DatesGrid(
+//    currentMonth: YearMonth,
+//    selectedDate: LocalDate?,
+//    onSelectDate: (LocalDate) -> Unit
+//) {
+//    val weeks = remember(currentMonth) { buildMonthMatrix(currentMonth) }
+//
+//    Column(modifier = Modifier.fillMaxWidth()) {
+//
+//        weeks.forEach { week ->
+//            Row(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .padding(vertical = 6.dp)
+//            ) {
+//
+//                week.forEach { date ->
+//
+//                    Box(
+//                        modifier = Modifier
+//                            .weight(1f)        // ⭐ SAME AS HEADER → PERFECT ALIGNMENT
+//                            .height(44.dp),
+//                        contentAlignment = Alignment.Center
+//                    ) {
+//
+//                        if (date != null) {
+//
+//                            val isSelected = selectedDate == date
+//
+//                            Box(
+//                                modifier = Modifier
+//                                    .size(42.dp)
+//                                    .clip(CircleShape)
+//                                    .clickable( interactionSource = remember { MutableInteractionSource() },
+//                                        indication = null) { onSelectDate(date) }
+//                                    .background(
+//                                        if (isSelected) Color(0xFF4A35C9) else Color.Transparent
+//                                    ),
+//                                contentAlignment = Alignment.Center
+//                            ) {
+//                                Text(
+//                                    text = date.dayOfMonth.toString(),
+//                                    fontSize = 15.sp,
+//                                    color = if (isSelected) Color.White else Color.Black
+//                                )
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
+//}
 
 
 @RequiresApi(Build.VERSION_CODES.O)

@@ -16,10 +16,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,15 +39,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.bussiness.curemegptapp.R
 import com.bussiness.curemegptapp.data.model.OnboardingPage
 import com.bussiness.curemegptapp.navigation.AppDestination
 import com.bussiness.curemegptapp.ui.component.ContinueButton
 import com.bussiness.curemegptapp.ui.component.SkipButton
+import com.bussiness.curemegptapp.util.AppConstant
+import com.bussiness.curemegptapp.viewmodel.onboardingViewModel.onBoardingViewModel
+import com.google.android.material.progressindicator.CircularProgressIndicator
 import kotlinx.coroutines.launch
 
-val onboardingPages = listOf(
+
+
+
+val onboardingPagesDummy = listOf(
     OnboardingPage(
         imageRes = R.drawable.onb1,
         title = "Never Miss a Dose",
@@ -69,21 +83,39 @@ val onboardingPages = listOf(
     )
 )
 
+
+
 @Composable
-fun OnboardingScreen(navController: NavHostController) {
-    val pagerState = rememberPagerState(initialPage = 0, pageCount = { onboardingPages.size })
+fun OnboardingScreen(navController: NavHostController,viewModel: onBoardingViewModel = hiltViewModel()) {
+
+
+    val onboardingPages by viewModel.pages.collectAsState()
+
+    val pagerState = rememberPagerState(
+        initialPage = 0,
+        pageCount = { onboardingPages.size }
+    )
+    if (onboardingPages.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
     val scope = rememberCoroutineScope()
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White),
+        modifier = Modifier.fillMaxSize().background(Color.White),
         verticalArrangement = Arrangement.SpaceBetween
     ) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.weight(1f)
         ) { page ->
+
             OnboardingPageContent(
                 page = onboardingPages[page],
                 currentPage = pagerState.currentPage,
@@ -91,11 +123,7 @@ fun OnboardingScreen(navController: NavHostController) {
             )
         }
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 10.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 10.dp)) {
             val isLastPage = pagerState.currentPage == onboardingPages.lastIndex
             val isFirstPage = pagerState.currentPage == 0
             Row(
@@ -136,7 +164,7 @@ fun OnboardingScreen(navController: NavHostController) {
 
 @Composable
 fun OnboardingPageContent(
-    page: OnboardingPage,
+    page: com.bussiness.curemegptapp.apimodel.OnBoardingModel.OnboardingPage,
     currentPage: Int,
     totalPages: Int
 ) {
@@ -148,8 +176,17 @@ fun OnboardingPageContent(
                 .fillMaxHeight(0.6f)
                 .clip(RoundedCornerShape(20.dp))
         ) {
-            Image(
-                painter = painterResource(id = page.imageRes),
+//            Image(
+//                painter = painterResource(id = page.imageRes),
+//                contentDescription = "Onboarding Image",
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .height(500.dp),
+//                contentScale = ContentScale.Crop
+//            )
+
+            AsyncImage(
+                model = AppConstant.IMAGE_BASE_URL+page.imageUrl,
                 contentDescription = "Onboarding Image",
                 modifier = Modifier
                     .fillMaxWidth()

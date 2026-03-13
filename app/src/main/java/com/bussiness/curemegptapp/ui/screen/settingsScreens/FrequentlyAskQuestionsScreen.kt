@@ -51,12 +51,17 @@ import com.bussiness.curemegptapp.ui.component.TopBarHeader2
 import com.bussiness.curemegptapp.ui.theme.AppGradientColors
 import com.bussiness.curemegptapp.ui.theme.gradientBrush
 import androidx.compose.foundation.lazy.items
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.stringResource
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.bussiness.curemegptapp.viewmodel.setting.FaqViewModel
 
 
 @Composable
-fun FrequentlyAskQuestionsScreen(navController: NavHostController) {
+fun FrequentlyAskQuestionsScreen(navController: NavHostController,
+                      viewModel : FaqViewModel = hiltViewModel()
+                                 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -65,60 +70,8 @@ fun FrequentlyAskQuestionsScreen(navController: NavHostController) {
     ) {
         TopBarHeader2(title = stringResource(R.string.settings_faq1)/*"Frequently Ask Questions"*/, onBackClick = { navController.popBackStack() })
 
-        val sampleFaqData =    listOf(
-            ExpandableItem(
-                id = 1,
-                title = "Lorem Ipsum is simply dummy text.",
-                content = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim.",
-                isExpanded = true
-            ),
-            ExpandableItem(
-                id = 2,
-                title = "Lorem Ipsum is simply dummy text.",
-                content = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus."
-            ),
-            ExpandableItem(
-                id = 3,
-                title = "Lorem Ipsum is simply dummy text.",
-                content = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus."
-            ),
-            ExpandableItem(
-                id = 4,
-                title = "Lorem Ipsum is simply dummy text.",
-                content = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus."
-            ),
-            ExpandableItem(
-                id = 5,
-                title = "Lorem Ipsum is simply dummy text.",
-                content = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus."
-            ),
-            ExpandableItem(
-                id = 6,
-                title = "Lorem Ipsum is simply dummy text.",
-                content = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus."
-            ),
-            ExpandableItem(
-                id = 6,
-                title = "Lorem Ipsum is simply dummy text.",
-                content = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus."
-            ),
-            ExpandableItem(
-                id = 7,
-                title = "Lorem Ipsum is simply dummy text.",
-                content = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus."
-            ),
-            ExpandableItem(
-                id = 8,
-                title = "Lorem Ipsum is simply dummy text.",
-                content = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus."
-            )
-        )
 
-        var items by remember {
-            mutableStateOf(
-                sampleFaqData
-            )
-        }
+        val items by viewModel.faqList.collectAsState()
 
 
         LazyColumn(
@@ -132,13 +85,7 @@ fun FrequentlyAskQuestionsScreen(navController: NavHostController) {
                 ExpandableCard(
                     item = item,
                     onToggle = { toggledItem ->
-                        items = items.map { currentItem ->
-                            if (currentItem.id == toggledItem.id) {
-                                currentItem.copy(isExpanded = !currentItem.isExpanded)
-                            } else {
-                                currentItem.copy(isExpanded = false) // baaki sab band
-                            }
-                        }
+                        viewModel.toggleItem(toggledItem)
                     }
                 )
             }

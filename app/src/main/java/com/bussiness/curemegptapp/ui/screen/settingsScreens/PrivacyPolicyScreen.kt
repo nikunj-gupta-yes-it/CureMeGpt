@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -20,15 +22,19 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.bussiness.curemegptapp.R
 import com.bussiness.curemegptapp.ui.component.TopBarHeader2
+import com.bussiness.curemegptapp.viewmodel.setting.PrivacyTermCondition
 
 //PrivacyPolicyScreen
 
 @Composable
-fun PrivacyPolicyScreen(navController: NavHostController) {
+fun PrivacyPolicyScreen(navController: NavHostController,
+                        viewModel: PrivacyTermCondition = hiltViewModel()
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -36,8 +42,7 @@ fun PrivacyPolicyScreen(navController: NavHostController) {
             .statusBarsPadding()
     ) {
         TopBarHeader2(title = stringResource(R.string.settings_privacy_policy)/*"Privacy Policy"*/, onBackClick = { navController.popBackStack() })
-        val fullText =
-            "By using CureMeGPT, you agree to follow our app guidelines. CureMeGPT provides AI-powered health support for informational purposes only and does not replace professional medical advice, diagnosis, or treatment. Always consult a licensed doctor for medical emergencies or specific conditions. You agree to use the app responsibly, provide accurate information, and respect other users’ privacy. We reserve the right to update features, policies, or terms at any time. Continued use of the app means you accept the latest version of these Terms & Conditions."
+        val fullText by viewModel.privacyPolicy.collectAsState()
 
         val keyword = "CureMeGPT"
         val keywordColor = Color(0xFF4338CA)   // Purple

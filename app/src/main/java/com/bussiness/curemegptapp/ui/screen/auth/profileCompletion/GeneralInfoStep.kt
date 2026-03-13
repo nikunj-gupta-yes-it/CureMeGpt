@@ -20,6 +20,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bussiness.curemegptapp.R
@@ -80,6 +82,10 @@ fun GeneralInfoStep(
 
         if (selectedAllergies.isEmpty()) {
             Toast.makeText(context, "Please select at least one allergy", Toast.LENGTH_SHORT).show()
+            return false
+        }
+        if (emergencyPhone.isNotBlank() && !emergencyPhone.matches(Regex("^[0-9]{10}$"))) {
+            Toast.makeText(context, "Please enter a valid 10-digit phone number", Toast.LENGTH_SHORT).show()
             return false
         }
 
@@ -220,9 +226,9 @@ fun GeneralInfoStep(
                 isImportant = false,
                 placeholder = stringResource(R.string.emergency_phone_placeholder),//"e.g. 555 945 325",
                 value = emergencyPhone,
-                onValueChange = { emergencyPhone = it }
+                onValueChange = { emergencyPhone = it },
+                keyboardType = KeyboardType.Phone
             )
-
             Spacer(modifier = Modifier.height(24.dp))
         }
         GradientButton(
@@ -235,12 +241,18 @@ fun GeneralInfoStep(
                     }
 
                     viewModel.updateGeneralInfo(
+                        onSuccess = {
+                            onNext()
+                        },
+                        onError = {
+                            Toast.makeText(context,it.toString(),Toast.LENGTH_SHORT).show()
+                        },
                         bloodGroup = bloodGroup,
                         allergies = allergiesList,
                         emergencyName = emergencyName,
                         emergencyPhone = emergencyPhone
                     )
-                    onNext()
+
                 }
             }
         )

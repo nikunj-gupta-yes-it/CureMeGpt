@@ -13,7 +13,7 @@ class AppConstant {
         const val MOOD_PREFS = "mood_prefs"
         const val LAST_MOOD_DATE = "last_mood_date"
        const val serverError = "An unknown error has occurred. Please check your connection and try again."
-
+       const val IMAGE_BASE_URL ="https://curemegpt.tgastaging.com/"
 
     }
 }

@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -24,15 +26,19 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.bussiness.curemegptapp.R
 import com.bussiness.curemegptapp.navigation.AppDestination
 import com.bussiness.curemegptapp.ui.component.SettingOptionItem
 import com.bussiness.curemegptapp.ui.component.TopBarHeader2
+import com.bussiness.curemegptapp.viewmodel.setting.AccountPrivacyViewModel
 
 @Composable
-fun AccountPrivacyScreen(navController: NavHostController) {
+fun AccountPrivacyScreen(navController: NavHostController,
+                         viewModel : AccountPrivacyViewModel = hiltViewModel()
+                         ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -40,8 +46,7 @@ fun AccountPrivacyScreen(navController: NavHostController) {
             .statusBarsPadding()
     ) {
         TopBarHeader2(title = stringResource(R.string.account_privacy), onBackClick = { navController.popBackStack() })
-        val fullText =
-            "CureMeGPT is your personal AI health companion, designed to bring trusted medical and dental guidance right to your fingertips. From quick health checks and symptom insights to daily wellness tracking and preventive reminders, our mission is to make healthcare simple, accessible, and available 24/7. We combine the power of AI with a user-friendly design to give you instant answers, tailored advice, and personalized care for you and your family. CureMeGPT is here to help you stay healthier, informed, and confident about your well-being—anytime, anywhere."
+        val fullText  by viewModel.privacyPolicy.collectAsState()
 
         val keyword = "CureMeGPT"
 

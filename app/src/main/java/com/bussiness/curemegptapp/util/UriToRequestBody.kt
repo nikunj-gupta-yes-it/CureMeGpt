@@ -1,0 +1,61 @@
+package com.bussiness.curemegptapp.util
+
+import android.content.Context
+import android.net.Uri
+import android.provider.OpenableColumns
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+
+object UriToRequestBody {
+
+    fun uriToRequestBody(context: Context, uri: Uri): RequestBody {
+        val contentResolver = context.contentResolver
+        val inputStream = contentResolver.openInputStream(uri)
+        val bytes = inputStream?.readBytes() ?: ByteArray(0)
+
+        return bytes.toRequestBody("application/octet-stream".toMediaTypeOrNull())
+    }
+
+    fun uriToMultipart(context: Context, uri: Uri, partName: String): MultipartBody.Part {
+
+        val contentResolver = context.contentResolver
+        val inputStream = contentResolver.openInputStream(uri)
+        val bytes = inputStream?.readBytes() ?: ByteArray(0)
+
+        val fileName = getFileName(context, uri) ?: "file"
+
+        val requestFile =
+            bytes.toRequestBody("application/octet-stream".toMediaTypeOrNull())
+
+        return MultipartBody.Part.createFormData(
+            partName,
+            fileName,
+            requestFile
+        )
+    }
+
+    fun getFileName(context: Context, uri: Uri): String? {
+        var name: String? = null
+        val cursor = context.contentResolver.query(uri, null, null, null, null)
+        cursor?.use {
+            val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (it.moveToFirst()) {
+                name = it.getString(nameIndex)
+            }
+        }
+        return name
+    }
+    fun uriListToMultipartList(
+        context: Context,
+        uris: List<Uri>,
+        partName: String
+    ): List<MultipartBody.Part> {
+
+        return uris.map { uri ->
+            uriToMultipart(context, uri, partName)
+        }
+    }
+
+}

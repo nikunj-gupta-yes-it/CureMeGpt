@@ -26,6 +26,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,14 +44,18 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.bussiness.curemegptapp.ui.component.TopBarHeader2
 import com.bussiness.curemegptapp.R
 import com.bussiness.curemegptapp.ui.screen.settings.SettingsScreen
+import com.bussiness.curemegptapp.viewmodel.setting.TermConditionViewModel
 
 @Composable
-fun TermsAndConditionsScreen(navController: NavHostController) {
+fun TermsAndConditionsScreen(navController: NavHostController,
+                             viewModel: TermConditionViewModel = hiltViewModel()
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -57,7 +63,7 @@ fun TermsAndConditionsScreen(navController: NavHostController) {
             .statusBarsPadding()
     ) {
         TopBarHeader2(title = stringResource(R.string.settings_terms_conditions)/*"Terms & Conditions"*/, onBackClick = { navController.popBackStack() })
-        val fullText = "Your privacy is our top priority. CureMeGPT collects only the information necessary to provide personalized health insights and improve your experience. This may include basic profile details, family member information, chat history, and health preferences. We do not share or sell your personal data with third parties without your consent. All data is stored securely and handled in compliance with privacy regulations. You have full control over your data and can update, export, or delete it at any time through your profile settings."
+        val fullText  by viewModel.termCondition.collectAsState()
 
         val keyword = "CureMeGPT"
         val keywordColor = Color(0xFF4338CA)   // Purple

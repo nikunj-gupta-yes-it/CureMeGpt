@@ -64,7 +64,7 @@ fun ProfileCompletionScreen(
                 viewModel = viewModel,
                 profileData = profileData,
                 onNext = {
-                    viewModel.submitProfile()
+
                     showAlertDialog = true  // Dialog show करें
                 }
             )
