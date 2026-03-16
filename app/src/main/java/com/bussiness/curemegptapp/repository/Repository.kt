@@ -8,6 +8,10 @@ import com.bussiness.curemegptapp.apimodel.personalmodel.PersonalModel
 import com.bussiness.curemegptapp.apimodel.personalmodel.ProfileResponse
 import com.bussiness.curemegptapp.apimodel.profilemodel.Data.UserProfile
 import com.bussiness.curemegptapp.apimodel.profilemodel.UserProfileResponse
+import com.bussiness.curemegptapp.apimodel.scheduleAppointment.AppointmentTypeModel
+import com.bussiness.curemegptapp.apimodel.scheduleAppointment.FamilyModel
+import com.bussiness.curemegptapp.ui.viewModel.main.FamilyMember
+import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import okhttp3.MultipartBody
 import retrofit2.Response
@@ -73,5 +77,20 @@ interface Repository {
 
     fun aboutUs() : Flow<NetworkResult<String>>
 
+    fun getAppointmentType() : Flow<NetworkResult<List<AppointmentTypeModel>>>
 
+    fun getFamilyMembersList() : Flow<NetworkResult<List<FamilyModel>>>
+
+     fun addScheduleAppointment(
+        @Field("for_whom_id") forWhomeId :String?,
+        @Field("appointment_type_id") appointmentTypeId :String,
+        @Field("description") description :String,
+        @Field("date") date :String,
+        @Field("time") time :String,
+        @Field("preferred_doctor") preferredDoctor:String,
+        @Field("preferred_clinic") preferredClinic :String,
+        @Field("appointment_reminder") reminder :String
+    ) : Flow<NetworkResult<String>>
+
+    fun  getPersonalProfile() : Flow<Resource<ProfileResponse>>
 }

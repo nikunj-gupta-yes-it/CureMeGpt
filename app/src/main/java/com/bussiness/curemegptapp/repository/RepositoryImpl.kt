@@ -16,8 +16,11 @@ import com.bussiness.curemegptapp.apimodel.personalmodel.ProfileResponse
 import com.bussiness.curemegptapp.apimodel.personalmodel.User
 import com.bussiness.curemegptapp.apimodel.profilemodel.Data.UserProfile
 import com.bussiness.curemegptapp.apimodel.profilemodel.UserProfileResponse
+import com.bussiness.curemegptapp.apimodel.scheduleAppointment.AppointmentTypeModel
+import com.bussiness.curemegptapp.apimodel.scheduleAppointment.FamilyModel
 import com.bussiness.curemegptapp.util.AppConstant
 import com.google.gson.Gson
+import kotlinx.coroutines.flow.catch
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -417,6 +420,133 @@ class RepositoryImpl @Inject constructor(
             emit(NetworkResult.Error(AppConstant.serverError))
         }
     }
+
+
+    override fun getAppointmentType(): Flow<NetworkResult<List<AppointmentTypeModel>>> =
+        flow {
+
+            val response = api.getAppointmentType()
+
+            if (response.isSuccessful) {
+
+                val respBody = response.body()
+
+                if (respBody != null) {
+
+                    if (respBody.has("success") && respBody.get("success").asBoolean) {
+
+                        val dataObject = respBody.get("data")?.asJsonObject
+                        val dataArray = dataObject?.get("data")?.asJsonArray ?: return@flow
+
+                        val appointmentTypeList = dataArray.map { element ->
+                            Gson().fromJson(element, AppointmentTypeModel::class.java)
+                        }
+
+                        emit(NetworkResult.Success(appointmentTypeList))
+
+                    } else {
+                        emit(NetworkResult.Error(respBody.get("message").asString))
+                    }
+
+                } else {
+                    emit(NetworkResult.Error(AppConstant.serverError))
+                }
+
+            } else {
+                emit(NetworkResult.Error(AppConstant.serverError))
+            }
+
+        }.catch { e ->
+
+            e.printStackTrace()
+            emit(NetworkResult.Error(AppConstant.serverError))
+
+        }
+
+    override fun getFamilyMembersList(): Flow<NetworkResult<List<FamilyModel>>> =
+        flow {
+
+            val response = api.getFamilyMembersList()
+
+            if (response.isSuccessful) {
+
+                val respBody = response.body()
+
+                if (respBody != null) {
+
+                    if (respBody.has("success") && respBody.get("success").asBoolean) {
+
+                        val dataObject = respBody.get("data")?.asJsonObject
+                        val dataArray = dataObject?.get("people")?.asJsonArray ?: return@flow
+
+                        val familyList = dataArray.map { element ->
+                            Gson().fromJson(element, FamilyModel::class.java)
+                        }
+
+                        emit(NetworkResult.Success(familyList))
+
+                    } else {
+                        emit(NetworkResult.Error(respBody.get("message").asString))
+                    }
+
+                } else {
+                    emit(NetworkResult.Error(AppConstant.serverError))
+                }
+
+            } else {
+                emit(NetworkResult.Error(AppConstant.serverError))
+            }
+
+        }.catch { e ->
+
+            e.printStackTrace()
+            emit(NetworkResult.Error(AppConstant.serverError))
+
+        }
+
+    override fun addScheduleAppointment(
+        forWhomeId: String?,
+        appointmentTypeId: String,
+        description: String,
+        date: String,
+        time: String,
+        preferredDoctor: String,
+        preferredClinic: String,
+        reminder: String
+    ): Flow<NetworkResult<String>> =  flow {
+        try {
+            val response = api.addScheduleAppointment(
+            forWhomeId,appointmentTypeId,description,date,time,preferredDoctor,preferredClinic,reminder)
+
+            if (response.isSuccessful) {
+                val respBody = response.body()
+                if (respBody != null) {
+                    if (respBody.has("success") && respBody.get("success").asBoolean) {
+                        val dataObject = respBody.get("message").asString
+                        emit(NetworkResult.Success(dataObject))
+                    } else {
+                        emit(NetworkResult.Error(respBody.get("message").asString))
+                    }
+                } else {
+                    emit(NetworkResult.Error(AppConstant.serverError))
+                }
+            } else {
+                emit(NetworkResult.Error(AppConstant.serverError))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emit(NetworkResult.Error(AppConstant.serverError))
+        }
+    }
+
+    override fun getPersonalProfile(): Flow<Resource<ProfileResponse>> = flow {
+            emit(Resource.Loading)
+            val result = safeApiCall {
+                api.getPersonalProfile()
+            }
+            emit(result)
+        }.flowOn(Dispatchers.IO)
+
 
 
     private suspend fun <T : BaseResponse> safeApiCall(

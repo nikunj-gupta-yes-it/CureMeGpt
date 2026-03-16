@@ -6,18 +6,76 @@ import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.bussiness.curemegptapp.data.model.ProfileData
+import com.bussiness.curemegptapp.repository.Repository
+import com.bussiness.curemegptapp.repository.Resource
+import com.bussiness.curemegptapp.util.AppConstant
+import com.bussiness.curemegptapp.util.LoaderManager
+import com.bussiness.curemegptapp.util.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class EditProfileViewModel @Inject constructor() : ViewModel() {
+class EditProfileViewModel @Inject constructor(
+    private val repository: Repository,
+    private val sessionManager: SessionManager
+) : ViewModel() {
 
     // Current step management
     val currentStep = mutableStateOf(0)
 
     // All profile data
     val profileData = mutableStateOf(ProfileData())
+
+    fun getProfileData(
+        onSuccess: () -> Unit,
+        onError: (msg: String) -> Unit
+    ){
+        viewModelScope.launch {
+            LoaderManager.show()
+            repository.getPersonalProfile().collectLatest {
+                when(it){
+                    is Resource.Success -> {
+                        Log.e("ProfileCompletionVM", "Inside Sucess Here")
+
+                        LoaderManager.hide()
+                        val userData =  it.data.data?.user
+                        val baseUrl = AppConstant.IMAGE_BASE_URL // Replace with your actual base URL
+
+                        val profileImage = userData?.profile_photo
+                            ?.takeIf { it.isNotBlank() }
+                            ?.let { "$baseUrl$it" } ?: ""
+                        profileData.value = profileData.value.copy(
+                            id = userData?.id ?: 0,
+                            fullName = userData?.name ?: "",
+                            contactNumber = userData?.phone ?: "",
+                            email = userData?.email ?: "",
+                            dateOfBirth = userData?.dob ?: "",
+                            gender = userData?.gender ?: "",
+                            height = userData?.height ?: "",
+                            weight = userData?.weight ?: "",
+                            profileImage = profileImage ?: ""
+                        )
+                        onSuccess()
+                    }
+                    is Resource.Error -> {
+                        LoaderManager.hide()
+                        Log.e("ProfileCompletionVM", "Error updating medical history: ${it.message}")
+                        onError(it.message ?: "An error occurred")
+                    }
+                    else -> {
+
+                    }
+                }
+
+            }
+        }
+    }
+
+
 
     // Functions to update profile data
     fun updatePersonalInfo(
@@ -42,6 +100,9 @@ class EditProfileViewModel @Inject constructor() : ViewModel() {
         )
         profileData.value = current
     }
+
+
+
 
     fun updateGeneralInfo(
         bloodGroup: String,

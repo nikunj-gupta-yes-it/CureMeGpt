@@ -19,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +49,7 @@ import com.bussiness.curemegptapp.ui.component.input.CustomPowerSpinner
 import com.bussiness.curemegptapp.ui.dialog.CalendarDialog
 import com.bussiness.curemegptapp.ui.dialog.SuccessfulDialog
 import com.bussiness.curemegptapp.ui.dialog.TimePickerDialog
+import com.bussiness.curemegptapp.viewmodel.appointmentViewModel.AppointmentViewModel
 import java.time.format.DateTimeFormatter
 
 //ScheduleNewAppointmentScreen
@@ -55,16 +57,17 @@ import java.time.format.DateTimeFormatter
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun ScheduleNewAppointmentScreen(
-    navController: NavHostController
+    navController: NavHostController,
+    viewModel : AppointmentViewModel = androidx.hilt.navigation.compose.hiltViewModel()
 ) {
+
     var dateOfBirth by remember { mutableStateOf("") }
     var time by remember { mutableStateOf("") }
     var preferredDoctor by remember { mutableStateOf("") }
     var preferredClinic by remember { mutableStateOf("") }
     var selectedMember by remember { mutableStateOf("Select Member") }
     var selectedAppointmentReminder by remember { mutableStateOf("Select Member") }
-    val memberOptions =
-        listOf("John Doe", "Jane Smith", "Alice Johnson", "Bob Williams") // Added example options
+    val memberOptions by viewModel.memberOption.collectAsState() // Added example options
       val selectedAppointmentReminderOptions =
         listOf("10 Min Before", "30 Min Before", "2 Hrs. Before", "24 Hrs. Before") // Added example options
     var selectedAppointment by remember { mutableStateOf("Select Appointment Type") }
@@ -73,24 +76,8 @@ fun ScheduleNewAppointmentScreen(
     var showDialog1 by remember { mutableStateOf(false) }
     var showDialogSuccessFully by remember { mutableStateOf(false) }
     val context = LocalContext.current
-    val appointmentOptions = listOf(
-        "Normal Check-up",
-        "Dental Check-up",
-        "Root Canal",
-        "Brain Check-up",
-        "Hair Check-up",
-        "Skin Check-up",
-        "Heart Check-up",
-        "Lungs Check-up",
-        "Liver Check-up",
-        "Intestine Check-up",
-        "Kidney Check-up",
-        "Bones Check-up",
-        "Feet Check-up",
-        "Hand Check-up",
-        "ENT Check-up"
-    )
-    // Time formatter for 12-hour format with AM/PM
+    val appointmentOptions by  viewModel.appointmentTypeOption.collectAsState()
+
 
     val timeFormatter = DateTimeFormatter.ofPattern("hh:mm a")
 
@@ -155,7 +142,7 @@ fun ScheduleNewAppointmentScreen(
         }
 
         // Validate Preferred Doctor (Optional but with validation if provided)
-        if (preferredDoctor.isNotBlank()) {
+         if (preferredDoctor.isNotBlank()) {
             if (preferredDoctor.length < 3) {
                 Toast.makeText(context, "Doctor name should be at least 3 characters", Toast.LENGTH_SHORT).show()
                 return false
@@ -168,12 +155,13 @@ fun ScheduleNewAppointmentScreen(
                 // Toast.makeText(context, "Consider adding 'Dr.' before the name", Toast.LENGTH_SHORT).show()
             }
         }
+
         if (preferredClinic.isBlank()) {
             Toast.makeText(context, "Clinic name is required", Toast.LENGTH_SHORT).show()
             return false
         }
 
-        // Validate Preferred Clinic (Optional but with validation if provided)
+
         if (preferredClinic.isNotBlank()) {
             if (preferredClinic.length < 3) {
                 Toast.makeText(context, "Clinic name should be at least 3 characters", Toast.LENGTH_SHORT).show()
@@ -187,7 +175,7 @@ fun ScheduleNewAppointmentScreen(
             return false
         }
 
-        // Validate future date and time
+
         try {
             val currentDate = java.time.LocalDate.now()
             val selectedDateParts = dateOfBirth.split("-")
@@ -270,9 +258,10 @@ fun ScheduleNewAppointmentScreen(
                 selectedText = selectedMember,
                 onSelectionChanged = { reason ->
                     selectedMember = reason
+                    viewModel.updateForWhomId(reason)
                 },
                 horizontalPadding = 24.dp,
-                reasons = memberOptions // Pass the list of options here
+                reasons = memberOptions
             )
 
             Spacer(Modifier.height(24.dp))
@@ -287,10 +276,11 @@ fun ScheduleNewAppointmentScreen(
             CustomPowerSpinner(
                 selectedText = selectedAppointment,
                 onSelectionChanged = { reason ->
+                    viewModel.updateAppointmentTypeId(reason)
                     selectedAppointment = reason
                 },
                 horizontalPadding = 24.dp,
-                reasons = appointmentOptions // Pass the list of options here
+                reasons = appointmentOptions
             )
 
             Spacer(Modifier.height(24.dp))
@@ -300,7 +290,9 @@ fun ScheduleNewAppointmentScreen(
                 isImportant = false,
                 placeholder = stringResource(R.string.type_here_placeholder)/*"Type here...."*/,
                 value = description,
-                onValueChange = { description = it },
+                onValueChange = { description = it
+                                viewModel.updateDescription(it)
+                                },
                 heightOfEditText = 135.dp,
                 paddingHorizontal = 5.dp,
                 borderColor = Color(0xFF697383),
@@ -341,7 +333,9 @@ fun ScheduleNewAppointmentScreen(
                 isImportant = false,
                 placeholder = stringResource(R.string.doctor_placeholder)/*"e.g., Dr. John Deo"*/,
                 value = preferredDoctor,
-                onValueChange = { preferredDoctor = it }
+                onValueChange = { preferredDoctor = it
+                     viewModel.updatePreferredDoctor(it)
+                }
             )
 
             Spacer(Modifier.height(20.dp))
@@ -351,7 +345,9 @@ fun ScheduleNewAppointmentScreen(
                 isImportant = false,
                 placeholder = stringResource(R.string.clinic_placeholder)/*"e.g., Bright Smile Dental"*/,
                 value = preferredClinic,
-                onValueChange = { preferredClinic = it }
+                onValueChange = { preferredClinic = it
+                    viewModel.updatePreferredClinic(it)
+                }
             )
 
             Spacer(Modifier.height(24.dp))
@@ -373,6 +369,7 @@ fun ScheduleNewAppointmentScreen(
                     selectedText = selectedAppointmentReminder,
                     onSelectionChanged = { reason ->
                         selectedAppointmentReminder = reason
+                        viewModel.updateAppointmentReminder(reason)
                     },
                     horizontalPadding = 24.dp,
                     reasons = selectedAppointmentReminderOptions // Pass the list of options here
@@ -386,12 +383,16 @@ fun ScheduleNewAppointmentScreen(
             ) {
 
                 CancelButton(title = stringResource(R.string.cancel_button)/*"Cancel"*/) {
-navController.navigateUp()
+                   navController.navigateUp()
                 }
 
                 ContinueButton(text = stringResource(R.string.schedule_button)/*"Schedule"*/) {
                     if (validateFields()) {
-                        showDialogSuccessFully = true
+                        viewModel.addScheduleAppointment({
+                            showDialogSuccessFully = true
+                        },{ msg ->
+                            Toast.makeText(context,msg,Toast.LENGTH_LONG).show()
+                        })
                     }
                 }
             }
@@ -401,10 +402,11 @@ navController.navigateUp()
     if (showDialog) {
         CalendarDialog(
             onDismiss = { showDialog = false },
+             allowFutureDates = true,
             onDateApplied = {
-                // SELECTED DATE HERE
                 showDialog = false
                 dateOfBirth = it.toString()
+                viewModel.updateDate(it.toString())
             }
         )
     }
@@ -414,6 +416,7 @@ navController.navigateUp()
                 showDialog1 = false
             }, onTimeApplied = {
                 time= it
+                viewModel.updateTime(time)
                 showDialog1 = false
             }
         )

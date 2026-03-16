@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,18 +50,38 @@ fun PersonalInfoStep(
     profileData: ProfileData,
     onNext: () -> Unit
 ) {
-    var fullName by remember { mutableStateOf(profileData.fullName) }
-    var contactNumber by remember { mutableStateOf(profileData.contactNumber) }
-    var email by remember { mutableStateOf(profileData.email) }
-    var dateOfBirth by remember { mutableStateOf(profileData.dateOfBirth) }
-    var gender by remember { mutableStateOf(profileData.gender) }
+    val profile by viewModel.profileData
+    var fullName by remember { mutableStateOf(profile.fullName) }
+    var contactNumber by remember { mutableStateOf(profile.contactNumber) }
+    var email by remember { mutableStateOf(profile.email) }
+    var dateOfBirth by remember { mutableStateOf(profile.dateOfBirth) }
+    var gender by remember { mutableStateOf(profile.gender) }
     var showDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    var uploadedProfile by remember {  mutableStateOf(profile.profileImage) }
     val genderOptions = listOf(
         stringResource(R.string.gender_male),
         stringResource(R.string.gender_female),
         stringResource(R.string.gender_other)
     )
+    LaunchedEffect(Unit) {
+        viewModel.getProfileData(onSuccess = {
+
+        }, onError = { msg ->
+            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+        }
+        )
+    }
+
+
+    LaunchedEffect(profile) {
+        fullName = profile.fullName
+        contactNumber = profile.contactNumber
+        email = profile.email
+        dateOfBirth = profile.dateOfBirth
+        gender = profile.gender
+        uploadedProfile = profile.profileImage
+    }
 
     if (showDialog) {
         CalendarDialog(
@@ -75,20 +96,21 @@ fun PersonalInfoStep(
 
     // Height and weight with units
     var heightValue by remember {
-        mutableStateOf(profileData.height.split(" ").getOrNull(0) ?: "")
+        mutableStateOf(profile.height.split(" ").getOrNull(0) ?: "")
     }
     var heightUnit by remember {
-        mutableStateOf(profileData.height.split(" ").getOrNull(1) ?: "Cm")
+        mutableStateOf(profile.height.split(" ").getOrNull(1) ?: "Cm")
     }
 
     var weightValue by remember {
-        mutableStateOf(profileData.weight.split(" ").getOrNull(0) ?: "")
+        mutableStateOf(profile.weight.split(" ").getOrNull(0) ?: "")
     }
     var weightUnit by remember {
-        mutableStateOf(profileData.weight.split(" ").getOrNull(1) ?: "Kg")
+        mutableStateOf(profile.weight.split(" ").getOrNull(1) ?: "Kg")
     }
 
     var selectedProfilePhotoUri by remember { mutableStateOf(profileData.profilePhotoUri) }
+
     var selectedProfilePhotoName by remember {
         mutableStateOf(profileData.profilePhotoUri?.lastPathSegment ?: "No file chosen")
     }
@@ -123,12 +145,14 @@ fun PersonalInfoStep(
 
         val phonePattern = Regex("^[0-9]+\$")
         if (!phonePattern.matches(contactNumber)) {
-            Toast.makeText(context, "Phone number must contain only digits", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Phone number must contain only digits", Toast.LENGTH_SHORT)
+                .show()
             return false
         }
 
         if (contactNumber.length < 10) {
-            Toast.makeText(context, "Phone number must be at least 10 digits", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Phone number must be at least 10 digits", Toast.LENGTH_SHORT)
+                .show()
             return false
         }
 
@@ -298,26 +322,26 @@ fun PersonalInfoStep(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-  /*      GradientButton(
-            horizontalPadding = 2.dp,
-            text = stringResource(R.string.save_and_continue),
-            onClick = {
-                val height = if (heightValue.isNotBlank()) "$heightValue $heightUnit" else ""
-                val weight = if (weightValue.isNotBlank()) "$weightValue $weightUnit" else ""
+        /*      GradientButton(
+                  horizontalPadding = 2.dp,
+                  text = stringResource(R.string.save_and_continue),
+                  onClick = {
+                      val height = if (heightValue.isNotBlank()) "$heightValue $heightUnit" else ""
+                      val weight = if (weightValue.isNotBlank()) "$weightValue $weightUnit" else ""
 
-                viewModel.updatePersonalInfo(
-                    fullName = fullName,
-                    contactNumber = contactNumber,
-                    email = email,
-                    dateOfBirth = dateOfBirth,
-                    gender = gender,
-                    height = height,
-                    weight = weight,
-                    profilePhotoUri = selectedProfilePhotoUri
-                )
-                onNext()
-            }
-        )*/
+                      viewModel.updatePersonalInfo(
+                          fullName = fullName,
+                          contactNumber = contactNumber,
+                          email = email,
+                          dateOfBirth = dateOfBirth,
+                          gender = gender,
+                          height = height,
+                          weight = weight,
+                          profilePhotoUri = selectedProfilePhotoUri
+                      )
+                      onNext()
+                  }
+              )*/
         GradientButton(
             horizontalPadding = 2.dp,
             text = stringResource(R.string.save_and_continue),

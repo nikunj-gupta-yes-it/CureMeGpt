@@ -42,5 +42,6 @@ data class User1(
     val last_login_at: String? = null,
     val created_at: String? = null,
     val updated_at: String? = null,
-    val deleted_at: String? = null
+    val deleted_at: String? = null,
+    val profile_photo :String? = null
 )

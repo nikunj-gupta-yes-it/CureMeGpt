@@ -53,6 +53,7 @@ import java.util.Locale
 @Composable
 fun CalendarDialog(
     onDismiss: () -> Unit,
+    allowFutureDates: Boolean = true,
     onDateApplied: (String) -> Unit
 ) {
     val currentMonth = remember { mutableStateOf(YearMonth.now()) }
@@ -135,6 +136,7 @@ fun CalendarDialog(
                 DatesGrid(
                     currentMonth = currentMonth.value,
                     selectedDate = selectedDate.value,
+                    allowFutureDates = allowFutureDates,
                     onSelectDate = { selectedDate.value = it }
                 )
 
@@ -276,8 +278,71 @@ fun DaysHeaderRow() {
 fun DatesGrid(
     currentMonth: YearMonth,
     selectedDate: LocalDate?,
+    allowFutureDates: Boolean,
     onSelectDate: (LocalDate) -> Unit
 ) {
+
+//    val weeks = remember(currentMonth) { buildMonthMatrix(currentMonth) }
+//    val today = LocalDate.now()
+//
+//    Column(modifier = Modifier.fillMaxWidth()) {
+//
+//        weeks.forEach { week ->
+//
+//            Row(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .padding(vertical = 6.dp)
+//            ) {
+//
+//                week.forEach { date ->
+//
+//                    Box(
+//                        modifier = Modifier
+//                            .weight(1f)
+//                            .height(44.dp),
+//                        contentAlignment = Alignment.Center
+//                    ) {
+//
+//                        if (date != null) {
+//
+//                            val isSelected = selectedDate == date
+//                            val isFutureDate = date.isAfter(today)
+//
+//                            Box(
+//                                modifier = Modifier
+//                                    .size(42.dp)
+//                                    .clip(CircleShape)
+//                                    .clickable(
+//                                        enabled = !isFutureDate,
+//                                        interactionSource = remember { MutableInteractionSource() },
+//                                        indication = null
+//                                    ) {
+//                                        onSelectDate(date)
+//                                    }
+//                                    .background(
+//                                        if (isSelected) Color(0xFF4A35C9)
+//                                        else Color.Transparent
+//                                    ),
+//                                contentAlignment = Alignment.Center
+//                            ) {
+//
+//                                Text(
+//                                    text = date.dayOfMonth.toString(),
+//                                    fontSize = 15.sp,
+//                                    color = when {
+//                                        isSelected -> Color.White
+//                                        isFutureDate -> Color.LightGray
+//                                        else -> Color.Black
+//                                    }
+//                                )
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//    }
 
     val weeks = remember(currentMonth) { buildMonthMatrix(currentMonth) }
     val today = LocalDate.now()
@@ -306,12 +371,15 @@ fun DatesGrid(
                             val isSelected = selectedDate == date
                             val isFutureDate = date.isAfter(today)
 
+                            val isDisabled =
+                                !allowFutureDates && isFutureDate
+
                             Box(
                                 modifier = Modifier
                                     .size(42.dp)
                                     .clip(CircleShape)
                                     .clickable(
-                                        enabled = !isFutureDate,
+                                        enabled = !isDisabled,
                                         interactionSource = remember { MutableInteractionSource() },
                                         indication = null
                                     ) {
@@ -329,7 +397,7 @@ fun DatesGrid(
                                     fontSize = 15.sp,
                                     color = when {
                                         isSelected -> Color.White
-                                        isFutureDate -> Color.LightGray
+                                        isDisabled -> Color.LightGray
                                         else -> Color.Black
                                     }
                                 )
@@ -340,6 +408,8 @@ fun DatesGrid(
             }
         }
     }
+
+
 }
 
 

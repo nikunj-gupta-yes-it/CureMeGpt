@@ -160,4 +160,31 @@ interface ApiService {
     suspend fun helpSupport() : Response<GsonJsonObject>
     @POST("about_us")
     suspend fun  aboutUs() : Response<GsonJsonObject>
+
+    @POST("get_appointment_type")
+    suspend fun getAppointmentType() : Response<GsonJsonObject>
+
+
+    @POST("get_family_members_list")
+    suspend fun getFamilyMembersList() : Response<GsonJsonObject>
+
+
+    @POST("schedule_appointment")
+    @FormUrlEncoded
+    suspend fun addScheduleAppointment(
+        @Field("for_whom_id") forWhomeId :String?,
+        @Field("appointment_type_id") appointmentTypeId :String,
+        @Field("description") description :String,
+        @Field("date") date :String,
+        @Field("time") time :String,
+        @Field("preferred_doctor") preferredDoctor:String,
+        @Field("preferred_clinic") preferredClinic :String,
+        @Field("appointment_reminder") reminder :String
+    ) : Response<GsonJsonObject>
+
+
+    @POST("get_personal_profile")
+    suspend fun getPersonalProfile() : Response<ProfileResponse>
+
+
 }

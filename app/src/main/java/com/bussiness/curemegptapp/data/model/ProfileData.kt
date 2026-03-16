@@ -3,6 +3,7 @@ package com.bussiness.curemegptapp.data.model
 import android.net.Uri
 
 data class ProfileData(
+    var id :Int =0,
     var fullName: String = "",
     var contactNumber: String = "",
     var email: String = "",
@@ -19,5 +20,6 @@ data class ProfileData(
     var surgicalHistory: String = "",
     var currentMedications: List<String> = emptyList(),
     var currentSupplements: List<String> = emptyList(),
-    var uploadedFiles: List<Uri> = emptyList()
+    var uploadedFiles: List<Uri> = emptyList(),
+    var profileImage :String=""
 )
