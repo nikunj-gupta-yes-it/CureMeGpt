@@ -198,6 +198,7 @@ interface ApiService {
         @Part("weight") weightBody: RequestBody,
         @Part profile_image:  MultipartBody.Part?
     ): Response<GsonJsonObject>
-
+    @POST("get_appointment_list")
+    suspend fun getAppointmentList() : Response<GsonJsonObject>
 
 }

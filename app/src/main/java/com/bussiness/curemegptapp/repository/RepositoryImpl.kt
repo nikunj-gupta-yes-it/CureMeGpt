@@ -4,6 +4,8 @@ import android.util.Log
 import com.bussiness.curemegptapp.apimodel.OnBoardingModel.OnboardingItem
 import com.bussiness.curemegptapp.apimodel.OnBoardingModel.OnboardingResponse
 import com.bussiness.curemegptapp.apimodel.QuestionAnswer
+import com.bussiness.curemegptapp.apimodel.getAppointmentList.AppointmentItem
+import com.bussiness.curemegptapp.apimodel.getAppointmentList.AppointmentListResponse
 import com.bussiness.curemegptapp.di.ApiService
 import com.bussiness.curemegptapp.util.Messages
 import kotlinx.coroutines.Dispatchers
@@ -22,6 +24,7 @@ import com.bussiness.curemegptapp.apimodel.scheduleAppointment.FamilyModel
 import com.bussiness.curemegptapp.util.AppConstant
 import com.bussiness.curemegptapp.util.UriToRequestBody
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.catch
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -623,6 +626,45 @@ class RepositoryImpl @Inject constructor(
             } else {
                 emit(NetworkResult.Error(AppConstant.serverError))
             }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emit(NetworkResult.Error(AppConstant.serverError))
+        }
+    }
+
+    override fun getAppointmentList(): Flow<NetworkResult<List<AppointmentItem>>> = flow {
+        try {
+
+            val response = api.getAppointmentList()
+
+            if (response.isSuccessful) {
+                val respBody = response.body()
+
+                if (respBody != null) {
+
+                    if (respBody.get("success").asBoolean) {
+
+                        val dataObj = respBody.getAsJsonObject("data")
+                        val listArray = dataObj.getAsJsonArray("data")
+
+                        val type = object : TypeToken<List<AppointmentItem>>() {}.type
+                        val appointmentList: List<AppointmentItem> =
+                            Gson().fromJson(listArray, type)
+
+                        emit(NetworkResult.Success(appointmentList))
+
+                    } else {
+                        emit(NetworkResult.Error(respBody.get("message").asString))
+                    }
+
+                } else {
+                    emit(NetworkResult.Error(AppConstant.serverError))
+                }
+
+            } else {
+                emit(NetworkResult.Error(AppConstant.serverError))
+            }
+
         } catch (e: Exception) {
             e.printStackTrace()
             emit(NetworkResult.Error(AppConstant.serverError))

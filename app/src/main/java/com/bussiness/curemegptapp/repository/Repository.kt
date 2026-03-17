@@ -3,6 +3,8 @@ package com.bussiness.curemegptapp.repository
 import com.bussiness.curemegptapp.apimodel.OnBoardingModel.OnboardingItem
 import com.bussiness.curemegptapp.apimodel.OnBoardingModel.OnboardingResponse
 import com.bussiness.curemegptapp.apimodel.QuestionAnswer
+import com.bussiness.curemegptapp.apimodel.getAppointmentList.AppointmentItem
+import com.bussiness.curemegptapp.apimodel.getAppointmentList.AppointmentListResponse
 import com.bussiness.curemegptapp.apimodel.loginmodel.LoginResponse
 import com.bussiness.curemegptapp.apimodel.personalmodel.PersonalModel
 import com.bussiness.curemegptapp.apimodel.personalmodel.ProfileResponse
@@ -102,5 +104,6 @@ interface Repository {
         profileImage: MultipartBody.Part?
     ): Flow<NetworkResult<String>>
 
+    fun  getAppointmentList() : Flow<NetworkResult<List<AppointmentItem>>>
 
 }

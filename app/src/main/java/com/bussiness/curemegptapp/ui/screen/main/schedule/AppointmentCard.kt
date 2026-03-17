@@ -38,10 +38,11 @@ import com.bussiness.curemegptapp.R
 import com.bussiness.curemegptapp.ui.component.GradientRedButton
 import com.bussiness.curemegptapp.ui.component.GradientViewSummaryButton
 import com.bussiness.curemegptapp.ui.dialog.AlertCardDialog
+import com.bussiness.curemegptapp.ui.viewModel.main.AppointmentUIModel
 
 @Composable
-fun AppointmentCard(appointment: Appointment,onEditClick: () -> Unit,
-                    onDeleteClick: () -> Unit,onViewClick: () -> Unit) {
+fun AppointmentCard(appointment: AppointmentUIModel, onEditClick: () -> Unit,
+                    onDeleteClick: () -> Unit, onViewClick: () -> Unit) {
     var showMenu by remember { mutableStateOf(false) }
 
     var checkedState by remember { mutableStateOf(false) }
