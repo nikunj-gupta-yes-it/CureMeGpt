@@ -14,11 +14,13 @@ import com.bussiness.curemegptapp.apimodel.loginmodel.LoginResponse
 import com.bussiness.curemegptapp.apimodel.personalmodel.PersonalModel
 import com.bussiness.curemegptapp.apimodel.personalmodel.ProfileResponse
 import com.bussiness.curemegptapp.apimodel.personalmodel.User
+import com.bussiness.curemegptapp.apimodel.personalmodel.User1
 import com.bussiness.curemegptapp.apimodel.profilemodel.Data.UserProfile
 import com.bussiness.curemegptapp.apimodel.profilemodel.UserProfileResponse
 import com.bussiness.curemegptapp.apimodel.scheduleAppointment.AppointmentTypeModel
 import com.bussiness.curemegptapp.apimodel.scheduleAppointment.FamilyModel
 import com.bussiness.curemegptapp.util.AppConstant
+import com.bussiness.curemegptapp.util.UriToRequestBody
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.catch
 import kotlinx.serialization.json.jsonArray
@@ -27,8 +29,10 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Response
+import retrofit2.http.Part
 import javax.inject.Inject
 import kotlin.collections.get
+
 
 class RepositoryImpl @Inject constructor(
     private val api: ApiService
@@ -539,14 +543,91 @@ class RepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getPersonalProfile(): Flow<Resource<ProfileResponse>> = flow {
-            emit(Resource.Loading)
-            val result = safeApiCall {
-                api.getPersonalProfile()
-            }
-            emit(result)
-        }.flowOn(Dispatchers.IO)
+    override fun getPersonalProfile(): Flow<NetworkResult<User1>> = flow {
+        try {
 
+            val response = api.getPersonalProfile()
+
+            if (response.isSuccessful) {
+                val respBody = response.body()
+                if (respBody != null) {
+                    if (respBody.has("success") && respBody.get("success").asBoolean) {
+                        val obj = respBody.get("data").asJsonObject
+
+                        val profileResponse = User1(
+                            id = obj.get("id")?.asInt ?: 0,
+                            name = obj.get("full_name")?.asString ?: "",
+                            phone = obj.get("contact_number")?.asString ?: "",
+                            email = obj.get("email_address")?.asString ?: "",
+                            dob = obj.get("dob")?.asString ?: "",
+                            gender = obj.get("gender")?.asString ?: "",
+                            height = obj.get("height")?.asString ?: "",
+                            weight = obj.get("weight")?.asString ?: "",
+                            profile_photo = obj.get("profile_photo")?.asString ?: ""
+                        )
+                         emit(NetworkResult.Success(profileResponse))
+
+                    } else {
+                        emit(NetworkResult.Error(respBody.get("message").asString))
+                    }
+                } else {
+                    emit(NetworkResult.Error(AppConstant.serverError))
+                }
+            } else {
+                emit(NetworkResult.Error(AppConstant.serverError))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emit(NetworkResult.Error(AppConstant.serverError))
+        }
+    }
+
+    override fun updatePersonalProfile(
+        name: String,
+        phone: String,
+        email: String,
+        dob: String,
+        gender: String,
+        height: String,
+        weight: String,
+        profileImage: MultipartBody.Part?
+    ): Flow<NetworkResult<String>> = flow {
+        try {
+
+            val nameBody = name.toRequestBody("text/plain".toMediaTypeOrNull())
+            val phoneBody = phone.toRequestBody("text/plain".toMediaTypeOrNull())
+            val emailBody = email.toRequestBody("text/plain".toMediaTypeOrNull())
+            val dobBody = dob.toRequestBody("text/plain".toMediaTypeOrNull())
+            val genderBody = gender.toRequestBody("text/plain".toMediaTypeOrNull())
+            val heightBody = height.toRequestBody("text/plain".toMediaTypeOrNull())
+            val weightBody = weight.toRequestBody("text/plain".toMediaTypeOrNull())
+
+            val response = api.updatePersonalProfile(
+                nameBody,phoneBody,emailBody,dobBody,genderBody,heightBody,weightBody,
+                profileImage
+            )
+
+            if (response.isSuccessful) {
+                val respBody = response.body()
+                if (respBody != null) {
+                    if (respBody.has("success") && respBody.get("success").asBoolean) {
+
+                        emit(NetworkResult.Success("Profile updated successfully"))
+
+                    } else {
+                        emit(NetworkResult.Error(respBody.get("message").asString))
+                    }
+                } else {
+                    emit(NetworkResult.Error(AppConstant.serverError))
+                }
+            } else {
+                emit(NetworkResult.Error(AppConstant.serverError))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emit(NetworkResult.Error(AppConstant.serverError))
+        }
+    }
 
 
     private suspend fun <T : BaseResponse> safeApiCall(

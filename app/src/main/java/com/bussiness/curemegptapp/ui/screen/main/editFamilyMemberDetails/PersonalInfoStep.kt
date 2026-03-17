@@ -41,6 +41,7 @@ import com.bussiness.curemegptapp.ui.dialog.CalendarDialog
 import com.bussiness.curemegptapp.ui.viewModel.auth.ProfileCompletionViewModel
 import com.bussiness.curemegptapp.ui.viewModel.main.AddFamilyMemberViewModel
 import com.bussiness.curemegptapp.ui.viewModel.main.EditProfileViewModel
+import com.bussiness.curemegptapp.util.UriToRequestBody
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -313,9 +314,17 @@ fun PersonalInfoStep(
                         gender = gender,
                         height = height,
                         weight = weight,
-                        profilePhotoUri = selectedProfilePhotoUri
+                        profilePhotoUri = selectedProfilePhotoUri,
+                        profileMultipart =  selectedProfilePhotoUri?.let { uri ->
+                            UriToRequestBody.uriToMultipart(context,uri, "profile_photo")
+                        },{
+                            onNext()
+                        },{
+                           Toast.makeText(context, "Failed to upload profile", Toast.LENGTH_SHORT).show()
+                        }
+
                     )
-                    onNext()
+
                 }
             }
         )

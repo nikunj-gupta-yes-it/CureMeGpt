@@ -6,6 +6,7 @@ import com.bussiness.curemegptapp.apimodel.QuestionAnswer
 import com.bussiness.curemegptapp.apimodel.loginmodel.LoginResponse
 import com.bussiness.curemegptapp.apimodel.personalmodel.PersonalModel
 import com.bussiness.curemegptapp.apimodel.personalmodel.ProfileResponse
+import com.bussiness.curemegptapp.apimodel.personalmodel.User1
 import com.bussiness.curemegptapp.apimodel.profilemodel.Data.UserProfile
 import com.bussiness.curemegptapp.apimodel.profilemodel.UserProfileResponse
 import com.bussiness.curemegptapp.apimodel.scheduleAppointment.AppointmentTypeModel
@@ -13,6 +14,7 @@ import com.bussiness.curemegptapp.apimodel.scheduleAppointment.FamilyModel
 import com.bussiness.curemegptapp.ui.viewModel.main.FamilyMember
 import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.Field
@@ -92,5 +94,13 @@ interface Repository {
         @Field("appointment_reminder") reminder :String
     ) : Flow<NetworkResult<String>>
 
-    fun  getPersonalProfile() : Flow<Resource<ProfileResponse>>
+    fun  getPersonalProfile() : Flow<NetworkResult<User1>>
+
+    fun updatePersonalProfile(
+        name: String, phone: String, email: String, dob: String, gender: String,
+        height: String, weight: String,
+        profileImage: MultipartBody.Part?
+    ): Flow<NetworkResult<String>>
+
+
 }

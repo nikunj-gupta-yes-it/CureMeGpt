@@ -10,6 +10,7 @@ import com.bussiness.curemegptapp.apimodel.scheduleAppointment.AppointmentTypeMo
 import com.bussiness.curemegptapp.apimodel.scheduleAppointment.FamilyModel
 import com.bussiness.curemegptapp.repository.NetworkResult
 import com.bussiness.curemegptapp.repository.Repository
+import com.bussiness.curemegptapp.util.CommonUtils.convertTo24HourFormat
 import com.bussiness.curemegptapp.util.LoaderManager
 import com.bussiness.curemegptapp.util.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -78,17 +79,15 @@ class AppointmentViewModel  @Inject constructor(
 
     @RequiresApi(Build.VERSION_CODES.O)
     fun updateDate(value: String) {
-
         val inputFormatter = DateTimeFormatter.ofPattern("MM-dd-yyyy")
         val outputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-
         val date = LocalDate.parse(value, inputFormatter)
         val formattedDate = date.format(outputFormatter)
         _appointmentRequest.value = _appointmentRequest.value.copy(date = value)
     }
 
     fun updateTime(value: String) {
-        _appointmentRequest.value = _appointmentRequest.value.copy(time = value)
+        _appointmentRequest.value = _appointmentRequest.value.copy(time =  convertTo24HourFormat(value))
     }
 
     fun updatePreferredDoctor(value: String) {

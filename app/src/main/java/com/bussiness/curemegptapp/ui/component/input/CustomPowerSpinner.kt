@@ -23,6 +23,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,6 +54,11 @@ fun CustomPowerSpinner(
 ) {
     var expanded by remember { mutableStateOf(false) }
     var selectedReason by remember { mutableStateOf(selectedText) }
+
+
+    LaunchedEffect(selectedText) {
+        selectedReason = selectedText
+    }
 
     BoxWithConstraints(modifier = modifier.background(Color.White)) {
         val dropdownWidth = maxWidth - 0.dp
@@ -105,7 +111,6 @@ fun CustomPowerSpinner(
             shape = RoundedCornerShape(12.dp),
         ) {
             reasons.forEachIndexed { index, reason ->
-
                 val isSelected = reason == selectedReason
 
                 Box(

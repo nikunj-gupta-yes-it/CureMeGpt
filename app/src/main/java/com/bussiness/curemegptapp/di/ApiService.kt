@@ -184,7 +184,20 @@ interface ApiService {
 
 
     @POST("get_personal_profile")
-    suspend fun getPersonalProfile() : Response<ProfileResponse>
+    suspend fun getPersonalProfile() : Response<GsonJsonObject>
+
+    @Multipart
+    @POST("update_personal_profile")
+    suspend fun updatePersonalProfile(
+        @Part("full_name") nameBody: RequestBody,
+        @Part("contact_number") phoneBody: RequestBody,
+        @Part("email_address") emailBody: RequestBody,
+        @Part("dob") dobBody: RequestBody,
+        @Part("gender") genderBody: RequestBody,
+        @Part("height") heightBody: RequestBody,
+        @Part("weight") weightBody: RequestBody,
+        @Part profile_image:  MultipartBody.Part?
+    ): Response<GsonJsonObject>
 
 
 }
