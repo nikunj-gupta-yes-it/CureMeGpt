@@ -33,8 +33,8 @@ object NetworkModule {
     ): OkHttpClient {
         val cacheSize = (5 * 1024 * 1024).toLong() // 5 MB
         val cache = Cache(context.cacheDir, cacheSize)
-
         val logging = HttpLoggingInterceptor { message ->
+            Log.d("RetrofitLog", message)
             Log.d("API", String.format("Response: %s", message));
         }
         if (BuildConfig.DEBUG) {

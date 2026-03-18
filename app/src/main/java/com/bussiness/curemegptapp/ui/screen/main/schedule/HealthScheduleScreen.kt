@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +48,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.bussiness.curemegptapp.R
 import com.bussiness.curemegptapp.navigation.AppDestination
@@ -58,6 +60,7 @@ import com.bussiness.curemegptapp.ui.sheet.BottomSheetDialog
 import com.bussiness.curemegptapp.ui.sheet.BottomSheetDialogProperties
 import com.bussiness.curemegptapp.ui.sheet.FilterAppointmentsBottomSheet
 import com.bussiness.curemegptapp.ui.sheet.FilterFamilyMembersSheet
+import com.bussiness.curemegptapp.ui.viewModel.main.ScheduleViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -100,8 +103,123 @@ data class MedicationTime(
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun HealthScheduleScreen(navController: NavHostController) {
+fun HealthScheduleScreen(navController: NavHostController,viewModel: ScheduleViewModel = hiltViewModel()) {
+    val state = viewModel.uiState
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog1 by remember { mutableStateOf(false) }
     var showSheet by remember { mutableStateOf(false) }
+    var selectedTab by remember { mutableStateOf(0) }
+    var searchQuery by remember { mutableStateOf("") }
+    var showViewDialog by remember { mutableStateOf(false) }
+    var selectedFilter by remember { mutableStateOf("All") }
+    var selectedMember by remember { mutableStateOf<String?>(null) }
+    var members: List<String> = listOf(
+        stringResource(R.string.james_myself_user),
+        stringResource(R.string.rose_logan_spouse_user),
+        stringResource(R.string.peter_logan_son_user)
+    )
+    // 🔥 THIS WILL CALL API EVERY TIME SCREEN ENTERS
+    LaunchedEffect(Unit) {
+        viewModel.getAppointments()
+    }
+    // 🔥 API DATA
+    val appointments = state.appointmentList
+
+    // 🔥 FILTER LOGIC
+    val filteredList = appointments.filter { item ->
+
+        val searchMatch =
+            item.title.contains(searchQuery, true) ||
+                    item.doctor.contains(searchQuery, true) ||
+                    item.patientName.contains(searchQuery, true)
+
+        val memberMatch =
+            selectedMember == null || item.patientName == selectedMember
+
+        val dateMatch = when (selectedFilter) {
+            "Today" -> item.date == getTodayDate()
+            "Upcoming" -> isUpcoming(item.date)
+            "Past" -> isPast(item.date)
+            else -> true
+        }
+
+        searchMatch && memberMatch && dateMatch
+    }
+    var selectedMemberMed by remember { mutableStateOf<String?>(null) }
+    var showSheet1 by remember { mutableStateOf(false) }
+    val medication = listOf(
+        Medication(
+            icon = R.drawable.ic_medication_icon,
+            title = stringResource(R.string.albuterol_inhaler_2_puffs),
+            patientName = "James",
+            medicationType = stringResource(R.string.medication_type_label1),
+            frequency = stringResource(R.string.weekly_frequency),
+            days = stringResource(R.string.monday_tuesday_days),
+            times = listOf(
+                MedicationTime(stringResource(R.string.time_900_am), false),
+                MedicationTime(stringResource(R.string.time_900_pm), false),
+                MedicationTime(stringResource(R.string.time_1000_am), false),
+                MedicationTime(stringResource(R.string.time_400_pm), false)
+            ),
+            startDate = stringResource(R.string.schedule_date_aug_28),
+            endDate = stringResource(R.string.schedule_date_oct_28),
+            instructions = stringResource(R.string.asthma_symptoms_instructions),
+            isVisibleItem = true
+        ),
+        Medication(
+            icon = R.drawable.ic_medication_icon,
+            title = stringResource(R.string.albuterol_inhaler),
+            patientName = "Peter Logan",
+            medicationType = stringResource(R.string.medication_type_label1),
+            frequency = stringResource(R.string.weekly_frequency),
+            days = stringResource(R.string.monday_tuesday_days),
+            times = listOf(
+                MedicationTime(stringResource(R.string.time_900_am), false),
+                MedicationTime(stringResource(R.string.time_900_pm), false),
+                MedicationTime(stringResource(R.string.time_1000_am), false),
+                MedicationTime(stringResource(R.string.time_400_pm), false)
+            ),
+            startDate = stringResource(R.string.schedule_date_aug_28),
+            endDate = stringResource(R.string.schedule_date_oct_28),
+            instructions = stringResource(R.string.asthma_symptoms_instructions),
+            isVisibleItem = true
+        ),
+        Medication(
+            icon = R.drawable.ic_medication_icon,
+            title = stringResource(R.string.supplements_name),
+            patientName = "Peter Logan",
+            medicationType = stringResource(R.string.medication_type_label1),
+            frequency = stringResource(R.string.weekly_frequency),
+            days = stringResource(R.string.monday_tuesday_days),
+            times = listOf(
+                MedicationTime(stringResource(R.string.time_900_am), false),
+                MedicationTime(stringResource(R.string.time_900_pm), false),
+                MedicationTime(stringResource(R.string.time_1000_am), false),
+                MedicationTime(stringResource(R.string.time_400_pm), false),
+                MedicationTime(stringResource(R.string.time_1100_am), false),
+                MedicationTime(stringResource(R.string.time_1200_pm), false),
+                MedicationTime(stringResource(R.string.time_100_pm), false),
+                MedicationTime(stringResource(R.string.time_200_pm), false)
+            ),
+            startDate = stringResource(R.string.schedule_date_aug_28),
+            endDate = stringResource(R.string.schedule_date_oct_28),
+            instructions = stringResource(R.string.asthma_symptoms_instructions),
+            isVisibleItem = true
+        )
+    )
+    val filteredList1 = medication.filter { item ->
+        val searchMatch =
+            item.title.contains(searchQuery, true) ||
+                    item.patientName.contains(searchQuery, true)
+
+        val memberMatch =
+            selectedMemberMed == null ||
+                    item.patientName == selectedMemberMed?.split(" ")?.get(0) // Compare first name only
+
+        searchMatch && memberMatch
+    }
+
+    /*  var showSheet by remember { mutableStateOf(false) }
     var showSheet1 by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableStateOf(0) }
     var searchQuery by remember { mutableStateOf("") }
@@ -184,7 +302,7 @@ fun HealthScheduleScreen(navController: NavHostController) {
         )
     )
 
-   /* val medication = listOf(
+   *//* val medication = listOf(
         Medication(
             icon = R.drawable.ic_medication_icon,
             title = stringResource(R.string.albuterol_inhaler_2_puffs),
@@ -243,7 +361,7 @@ fun HealthScheduleScreen(navController: NavHostController) {
             instructions = stringResource(R.string.asthma_symptoms_instructions),
             isVisibleItem = true
         )
-    )*/
+    )*//*
     val medication = listOf(
         // James (Myself) की medications
         Medication(
@@ -316,7 +434,7 @@ fun HealthScheduleScreen(navController: NavHostController) {
             instructions = "Take on empty stomach",
             isVisibleItem = true
         ),
-/*        Medication(
+*//*        Medication(
             icon = R.drawable.ic_medication_icon,
             title = stringResource(R.string.supplements_name),
             patientName = peterUser.split(" ")[0], // "Peter"
@@ -337,12 +455,12 @@ fun HealthScheduleScreen(navController: NavHostController) {
             endDate = stringResource(R.string.schedule_date_oct_28),
             instructions = stringResource(R.string.asthma_symptoms_instructions),
             isVisibleItem = true
-        )*/
+        )*//*
     )
 
     var selectedFilter by remember { mutableStateOf("All") }   // Today, Upcoming, Past, All
     var selectedMember by remember { mutableStateOf<String?>(null) }
-  /*  var selectedMemberMed by remember { mutableStateOf<String?>(null) }*/
+  *//*  var selectedMemberMed by remember { mutableStateOf<String?>(null) }*//*
     var selectedMemberMed by remember {
         mutableStateOf<String?>(jamesUser)
     }
@@ -374,7 +492,7 @@ fun HealthScheduleScreen(navController: NavHostController) {
 //        item.title.contains(searchQuery, ignoreCase = true)
 //    }
 
-/*    val filteredList1 = medication.filter { item ->
+*//*    val filteredList1 = medication.filter { item ->
         val searchMatch =
             item.title.contains(searchQuery, true) ||
                     item.patientName.contains(searchQuery, true)
@@ -383,7 +501,7 @@ fun HealthScheduleScreen(navController: NavHostController) {
             selectedMemberMed == null || item.patientName == selectedMemberMed
 
         searchMatch && memberMatch
-    }*/
+    }*//*
     val filteredList1 = medication.filter { item ->
         val searchMatch =
             item.title.contains(searchQuery, true) ||
@@ -397,7 +515,7 @@ fun HealthScheduleScreen(navController: NavHostController) {
     }
 
 
-
+*/
 
     Box(
         modifier = Modifier
