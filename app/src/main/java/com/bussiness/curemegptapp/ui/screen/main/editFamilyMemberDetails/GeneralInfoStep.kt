@@ -239,9 +239,17 @@ fun GeneralInfoStep(
                         bloodGroup = bloodGroup,
                         allergies = allergiesList,
                         emergencyName = emergencyName,
-                        emergencyPhone = emergencyPhone
+                        emergencyPhone = emergencyPhone,
+                            onSuccess = {
+                                Toast.makeText(context, "General information updated successfully", Toast.LENGTH_SHORT).show()
+                                onNext()
+                            },
+                            onError = { errorMsg ->
+                                Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                            }
+
                     )
-                    onNext()
+
                 }
             }
         )

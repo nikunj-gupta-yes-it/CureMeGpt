@@ -445,7 +445,12 @@ fun HistoryStep(
                         chronicConditions = conditionsList,
                         surgicalHistory = surgicalHistory,
                         currentMedications = currentMedications.filter { it.isNotBlank() },
-                        currentSupplements = currentSupplements.filter { it.isNotBlank() }
+                        currentSupplements = currentSupplements.filter { it.isNotBlank() },{
+
+
+                        },{
+                            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                        }
                     )
                     onNext()
                 }

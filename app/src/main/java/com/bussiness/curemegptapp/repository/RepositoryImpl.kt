@@ -22,6 +22,7 @@ import com.bussiness.curemegptapp.apimodel.scheduleAppointment.FamilyModel
 import com.bussiness.curemegptapp.util.AppConstant
 import com.bussiness.curemegptapp.util.UriToRequestBody
 import com.google.gson.Gson
+import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.catch
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -544,7 +545,7 @@ class RepositoryImpl @Inject constructor(
     }
 
     override fun getPersonalProfile(): Flow<NetworkResult<User1>> = flow {
-        try {
+      //  try {
 
             val response = api.getPersonalProfile()
 
@@ -557,13 +558,25 @@ class RepositoryImpl @Inject constructor(
                         val profileResponse = User1(
                             id = obj.get("id")?.asInt ?: 0,
                             name = obj.get("full_name")?.asString ?: "",
-                            phone = obj.get("contact_number")?.asString ?: "",
-                            email = obj.get("email_address")?.asString ?: "",
+                            phone = if (obj.has("contact_number") && !obj.get("contact_number").isJsonNull) {
+                                    obj.get("contact_number")?.asString
+                                } else {
+                                    ""
+                                },
+                            email = if (obj.has("email_address") && !obj.get("email_address").isJsonNull) {
+                                    obj.get("email_address")?.asString
+                                } else {
+                                    ""
+                                },
                             dob = obj.get("dob")?.asString ?: "",
                             gender = obj.get("gender")?.asString ?: "",
                             height = obj.get("height")?.asString ?: "",
                             weight = obj.get("weight")?.asString ?: "",
-                            profile_photo = obj.get("profile_photo")?.asString ?: ""
+                            profile_photo = if (obj.has("profile_photo") && !obj.get("profile_photo").isJsonNull) {
+                                obj.get("profile_photo").asString
+                            } else {
+                                ""
+                            }
                         )
                          emit(NetworkResult.Success(profileResponse))
 
@@ -576,10 +589,10 @@ class RepositoryImpl @Inject constructor(
             } else {
                 emit(NetworkResult.Error(AppConstant.serverError))
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            emit(NetworkResult.Error(AppConstant.serverError))
-        }
+//        } catch (e: Exception) {
+//            e.printStackTrace()
+//            emit(NetworkResult.Error(AppConstant.serverError))
+//        }
     }
 
     override fun updatePersonalProfile(
@@ -614,6 +627,247 @@ class RepositoryImpl @Inject constructor(
 
                         emit(NetworkResult.Success("Profile updated successfully"))
 
+                    } else {
+                        emit(NetworkResult.Error(respBody.get("message").asString))
+                    }
+                } else {
+                    emit(NetworkResult.Error(AppConstant.serverError))
+                }
+            } else {
+                emit(NetworkResult.Error(AppConstant.serverError))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emit(NetworkResult.Error(AppConstant.serverError))
+        }
+    }
+
+    override fun getGeneralProfile(): Flow<NetworkResult<User1>>  = flow{
+        try {
+
+            val response = api.getGeneralProfile()
+
+            if (response.isSuccessful) {
+                val respBody = response.body()
+                if (respBody != null) {
+                    if (respBody.has("success") && respBody.get("success").asBoolean) {
+
+                        val dataObj = respBody.getAsJsonObject("data")
+
+
+                        val allergiesList = if (dataObj.has("known_allergies") &&
+                            dataObj.get("known_allergies").isJsonArray) {
+
+                            dataObj.getAsJsonArray("known_allergies")
+                                .mapNotNull { element ->
+                                    if (!element.isJsonNull) element.asString.trim() else null
+                                }
+
+                        } else {
+                            emptyList()
+                        }
+
+                        val allergiesString = allergiesList.joinToString(", ")
+
+                        // Safe string extractor
+                        fun JsonObject.getSafeString(key: String): String {
+                            return if (has(key) && !get(key).isJsonNull) {
+                                get(key).asString.trim()
+                            } else {
+                                ""
+                            }
+                        }
+
+                        val profileResponse = User1(
+                            blood_group = dataObj.getSafeString("blood_group"),
+                            allergies = allergiesString,
+                            emergency_contact_name = dataObj.getSafeString("emergency_contact_name"),
+                            emergency_contact_number = dataObj.getSafeString("emergency_phone_number")
+                        )
+
+                        emit(NetworkResult.Success(profileResponse))
+
+                    } else {
+                        emit(NetworkResult.Error(respBody.get("message").asString))
+                    }
+                } else {
+                    emit(NetworkResult.Error(AppConstant.serverError))
+                }
+            } else {
+                emit(NetworkResult.Error(AppConstant.serverError))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emit(NetworkResult.Error(AppConstant.serverError))
+        }
+    }
+
+    override fun updateGeneralProfile(
+        bloodGroup: String,
+        allergies: String,
+        contactName: String,
+        contactNumber: String
+    ): Flow<NetworkResult<String>> =flow{
+        try {
+            val response = api.completeGeneralProfile(
+                bloodGroup,allergies,contactName,contactNumber
+            )
+
+            if (response.isSuccessful) {
+                val respBody = response.body()
+                if (respBody != null) {
+                    if (respBody.has("success") && respBody.get("success").asBoolean) {
+
+                        emit(NetworkResult.Success("General profile completed successfully"))
+
+                    } else {
+                        emit(NetworkResult.Error(respBody.get("message").asString))
+                    }
+                } else {
+                    emit(NetworkResult.Error(AppConstant.serverError))
+                }
+            } else {
+                emit(NetworkResult.Error(AppConstant.serverError))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emit(NetworkResult.Error(AppConstant.serverError))
+        }
+
+    }
+
+    override fun getGeneralProfileHistory(): Flow<NetworkResult<User1>> = flow {
+        try {
+
+            val response = api.getGeneralProfileHistory()
+
+            if (response.isSuccessful) {
+                val respBody = response.body()
+                if (respBody != null) {
+                    if (respBody.has("success") && respBody.get("success").asBoolean) {
+                        val dataObj = respBody.getAsJsonObject("data")
+                        fun JsonObject.getSafeString(key: String): String {
+                            return if (has(key) && !get(key).isJsonNull) {
+                                get(key).asString.trim()
+                            } else {
+                                ""
+                            }
+                        }
+
+                        fun JsonObject.getSafeStringList(key: String): String {
+                            return if (has(key) && get(key).isJsonArray) {
+                                getAsJsonArray(key)
+                                    .mapNotNull { element ->
+                                        if (!element.isJsonNull) element.asString.trim() else null
+                                    }
+                                    .joinToString(", ")
+                            } else {
+                                ""
+                            }
+                        }
+
+                        val profileResponse = User1(
+                            blood_group = dataObj.getSafeString("blood_group"),
+                            allergies = dataObj.getSafeStringList("known_allergies"),
+                            emergency_contact_name = dataObj.getSafeString("emergency_contact_name"),
+                            emergency_contact_number = dataObj.getSafeString("emergency_phone_number"),
+                            chronic_condition = dataObj.getSafeStringList("chronic_condition"),
+                            surgical_history = dataObj.getSafeString("surgical_history"),
+                            current_medications = dataObj.getSafeStringList("current_medications"),
+                            current_supplements = dataObj.getSafeStringList("current_supplements")
+                        )
+
+                        emit(NetworkResult.Success(profileResponse))
+
+                    } else {
+                        emit(NetworkResult.Error(respBody.get("message").asString))
+                    }
+                } else {
+                    emit(NetworkResult.Error(AppConstant.serverError))
+                }
+            } else {
+                emit(NetworkResult.Error(AppConstant.serverError))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emit(NetworkResult.Error(AppConstant.serverError))
+        }
+    }
+
+    override suspend fun updateGeneralProfileHistory(
+        chronicConditions: String,
+        surgicalHistory: String,
+        currentMedication: String,
+        currentSupplement: String
+    ): Flow<NetworkResult<String>>  = flow{
+        try {
+            val response = api.updateGeneralProfileHistory(
+                chronicConditions, surgicalHistory, currentMedication, currentSupplement
+            )
+
+            if (response.isSuccessful) {
+                val respBody = response.body()
+                if (respBody != null) {
+                    if (respBody.has("success") && respBody.get("success").asBoolean) {
+
+                        emit(NetworkResult.Success("Profile history updated successfully"))
+
+                    } else {
+                        emit(NetworkResult.Error(respBody.get("message").asString))
+                    }
+                } else {
+                    emit(NetworkResult.Error(AppConstant.serverError))
+                }
+            } else {
+                emit(NetworkResult.Error(AppConstant.serverError))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emit(NetworkResult.Error(AppConstant.serverError))
+        }
+    }
+
+    override fun getProfileDocuments(): Flow<NetworkResult<List<String>>> =flow{
+        try {
+            val response = api.getProfileDocuments()
+
+            if (response.isSuccessful) {
+                val respBody = response.body()
+                if (respBody != null) {
+                    if (respBody.has("success") && respBody.get("success").asBoolean) {
+
+                     var result = listOf<String>()
+                        val dataObject = respBody.get("data")?.asJsonObject
+                        val dataArray = dataObject?.get("medical_documents")?.asJsonArray ?: return@flow
+                        result = dataArray.map { element ->
+                            element.asString
+                        }
+                        emit(NetworkResult.Success(result))
+
+                    } else {
+                        emit(NetworkResult.Error(respBody.get("message").asString))
+                    }
+                } else {
+                    emit(NetworkResult.Error(AppConstant.serverError))
+                }
+            } else {
+                emit(NetworkResult.Error(AppConstant.serverError))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emit(NetworkResult.Error(AppConstant.serverError))
+        }
+    }
+
+    override fun completeProfileDocuments(files: List<MultipartBody.Part>): Flow<NetworkResult<String>>
+    = flow {
+          try {
+              val response = api.completeProfileDocuments(files)
+              if (response.isSuccessful) {
+                val respBody = response.body()
+                  if (respBody != null) {
+                    if (respBody.has("success") && respBody.get("success").asBoolean) {
+                        emit(NetworkResult.Success("Profile Updated successfully"))
                     } else {
                         emit(NetworkResult.Error(respBody.get("message").asString))
                     }

@@ -1,5 +1,6 @@
 package com.bussiness.curemegptapp.ui.screen.main.editProfile
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -54,45 +56,251 @@ fun GeneralInfoStep(
     profileData: ProfileData,
     onNext: () -> Unit
 ) {
+//    var bloodGroup by remember { mutableStateOf(profileData.bloodGroup) }
+//    var selectedAllergies by remember { mutableStateOf(profileData.allergies.toSet()) }
+//    var customAllergy by remember { mutableStateOf("") }
+//    var emergencyName by remember { mutableStateOf(profileData.emergencyContactName) }
+//    var emergencyPhone by remember { mutableStateOf(profileData.emergencyContactPhone) }
+//    val context = LocalContext.current
+//
+//    val allergyOptions = listOf(
+//        "Drug", "Food", "Environmental", "Aspirin",
+//        "Latex", "Ibuprofen", "Shellfish", "Nuts",
+//        "Penicillin", "Others"
+//    )
+//    val bloodOptions = listOf(
+//        "A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"
+//    )
+//    fun validateFields(): Boolean {
+//        if (bloodGroup.isBlank()) {
+//            Toast.makeText(context, "Blood group is required", Toast.LENGTH_SHORT).show()
+//            return false
+//        }
+//        // Check if selected gender is valid (from the options)
+//        if (bloodGroup !in bloodOptions) {
+//            Toast.makeText(context, "Blood group is required", Toast.LENGTH_SHORT).show()
+//            return false
+//        }
+//
+//        if (selectedAllergies.isEmpty()) {
+//            Toast.makeText(context, "Please select at least one allergy", Toast.LENGTH_SHORT).show()
+//            return false
+//        }
+//
+//        // Check if "Others" is selected but custom field is empty
+//        if ("Others" in selectedAllergies && customAllergy.isBlank()) {
+//            Toast.makeText(context, "Please specify your allergy", Toast.LENGTH_SHORT).show()
+//            return false
+//        }
+//
+//        return true
+//    }
+//
+//    Column(
+//        modifier = Modifier
+//            .fillMaxSize()
+//            .verticalScroll(rememberScrollState())
+//            .padding(16.dp)
+//    ) {
+//
+//        Column(modifier = Modifier.padding(horizontal = 9.dp)) {
+//
+//
+//            Row {
+//
+//                Text(
+//                    text = stringResource(R.string.blood_group_label),//"Blood Group",
+//                    color = Color.Black,
+//                    fontFamily = FontFamily(Font(R.font.urbanist_regular)),
+//                    fontWeight = FontWeight.Normal,
+//                    modifier = Modifier.padding(bottom = 6.dp)
+//                )
+//                Text(
+//                    text = " *",
+//                    color = Color.Red,
+//                    fontFamily = FontFamily(Font(R.font.urbanist_regular)),
+//                    fontWeight = FontWeight.Normal,
+//                    modifier = Modifier.padding(bottom = 6.dp)
+//                )
+//            }
+//
+//
+//            CustomPowerSpinner(
+//                selectedText = bloodGroup,
+//                onSelectionChanged = { reason ->
+//                    bloodGroup = reason
+//                },
+//                reasons = bloodOptions // Pass the list of options here
+//            )
+//
+//            Spacer(modifier = Modifier.height(16.dp))
+//
+//            Row{
+//
+//
+//                Text(
+//                    text = stringResource(R.string.known_allergies_label),//"Known Allergies",
+//                    fontSize = 14.sp,
+//                    fontWeight = FontWeight.Normal,
+//                    color = Color.Black,
+//                    fontFamily = FontFamily(Font(R.font.urbanist_regular))
+//                )
+//                Text(
+//                    text = "*",
+//                    color = Color.Red,
+//                    fontFamily = FontFamily(Font(R.font.urbanist_regular)),
+//                    fontWeight = FontWeight.Normal,
+//                    modifier = Modifier.padding(bottom = 6.dp)
+//                ) }
+//
+//
+//            Spacer(modifier = Modifier.height(8.dp))
+//
+//            LazyVerticalGrid(
+//                columns = GridCells.Fixed(3),
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .heightIn(max = 600.dp),
+//                horizontalArrangement = Arrangement.spacedBy(10.dp),
+//                verticalArrangement = Arrangement.spacedBy(10.dp),
+//                userScrollEnabled = false
+//            ) {
+//                items(allergyOptions) { item ->
+//                    val isSelected = item in selectedAllergies
+//                    Box(
+//                        modifier = Modifier
+//                            .clip(RoundedCornerShape(40.dp))
+//                            .border(
+//                                1.dp,
+//                                if (isSelected) Color(0xFF5B4FFF) else Color(0xFFE0E0E0),
+//                                RoundedCornerShape(40.dp)
+//                            )
+//                            .background(
+//                                if (isSelected) Color(0x205B4FFF) else Color.Transparent
+//                            )
+//                            .clickable( interactionSource = remember { MutableInteractionSource() },
+//                                indication = null){
+//                                selectedAllergies = if (isSelected)
+//                                    selectedAllergies - item
+//                                else
+//                                    selectedAllergies + item
+//                            }
+//                            .padding(vertical = 5.dp)
+//                            .fillMaxWidth(),
+//                        contentAlignment = Alignment.Center
+//                    ) {
+//                        Text(
+//                            text = item,
+//                            fontSize = 11.sp,
+//                            color = if (isSelected) Color(0xFF5B4FFF) else Color.Black
+//                        )
+//                    }
+//                }
+//            }
+//
+//            Spacer(modifier = Modifier.height(16.dp))
+//
+//            if ("Others" in selectedAllergies) {
+//                ProfileInputWithoutLabelField(
+//                    placeholder = stringResource(R.string.write_allergy_placeholder),//"Write allergy",
+//                    value = customAllergy,
+//                    onValueChange = { customAllergy = it }
+//                )
+//                Spacer(modifier = Modifier.height(16.dp))
+//            }
+//
+//            ProfileInputField(
+//                label = stringResource(R.string.emergency_name_label),//"Emergency Contact Name (Optional)",
+//                isImportant = false,
+//                placeholder = stringResource(R.string.emergency_name_placeholder),//"e.g. Bob Dsouza",
+//                value = emergencyName,
+//                onValueChange = { emergencyName = it }
+//            )
+//
+//            Spacer(modifier = Modifier.height(16.dp))
+//
+//            ProfileInputField(
+//                label =stringResource(R.string.emergency_phone_label),// "Emergency Phone Number (Optional)",
+//                isImportant = false,
+//                placeholder = stringResource(R.string.emergency_phone_placeholder),//"e.g. 555 945 325",
+//                value = emergencyPhone,
+//                onValueChange = { emergencyPhone = it }
+//            )
+//
+//            Spacer(modifier = Modifier.height(24.dp))
+//        }
+//    /*    GradientButton(
+//            text = stringResource(R.string.save_and_continue),//"Save & Continue",
+//            onClick = {
+//                val allergiesList = selectedAllergies.toMutableList()
+//                if ("Others" in selectedAllergies && customAllergy.isNotEmpty()) {
+//                    allergiesList.add(customAllergy)
+//                }
+//
+//                viewModel.updateGeneralInfo(
+//                    bloodGroup = bloodGroup,
+//                    allergies = allergiesList,
+//                    emergencyName = emergencyName,
+//                    emergencyPhone = emergencyPhone
+//                )
+//                onNext()
+//            }
+//        )*/
+//        GradientButton(
+//            text = stringResource(R.string.save_and_continue),
+//            onClick = {
+//                if (validateFields()) {
+//                    val allergiesList = selectedAllergies.toMutableList()
+//                    if ("Others" in selectedAllergies && customAllergy.isNotEmpty()) {
+//                        allergiesList.add(customAllergy)
+//                    }
+//
+//                    viewModel.updateGeneralInfo(
+//                        bloodGroup = bloodGroup,
+//                        allergies = allergiesList,
+//                        emergencyName = emergencyName,
+//                        emergencyPhone = emergencyPhone
+//                    )
+//                    onNext()
+//                }
+//            }
+//        )
+//    }
+
+
+    val profileData = viewModel.profileFormState
+    val context = LocalContext.current
+
     var bloodGroup by remember { mutableStateOf(profileData.bloodGroup) }
     var selectedAllergies by remember { mutableStateOf(profileData.allergies.toSet()) }
     var customAllergy by remember { mutableStateOf("") }
     var emergencyName by remember { mutableStateOf(profileData.emergencyContactName) }
     var emergencyPhone by remember { mutableStateOf(profileData.emergencyContactPhone) }
-    val context = LocalContext.current
+
+    /* Update UI when API response arrives */
+    LaunchedEffect(profileData) {
+        bloodGroup = profileData.bloodGroup
+        selectedAllergies = profileData.allergies.toSet()
+        Log.d("TESTING_SELECTED_ALLERGIES", "Selected allergies: "+ selectedAllergies.size)
+        emergencyName = profileData.emergencyContactName
+        emergencyPhone = profileData.emergencyContactPhone
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.getGeneralProfile {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+        }
+    }
 
     val allergyOptions = listOf(
         "Drug", "Food", "Environmental", "Aspirin",
         "Latex", "Ibuprofen", "Shellfish", "Nuts",
         "Penicillin", "Others"
     )
+
     val bloodOptions = listOf(
         "A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"
     )
-    fun validateFields(): Boolean {
-        if (bloodGroup.isBlank()) {
-            Toast.makeText(context, "Blood group is required", Toast.LENGTH_SHORT).show()
-            return false
-        }
-        // Check if selected gender is valid (from the options)
-        if (bloodGroup !in bloodOptions) {
-            Toast.makeText(context, "Blood group is required", Toast.LENGTH_SHORT).show()
-            return false
-        }
-
-        if (selectedAllergies.isEmpty()) {
-            Toast.makeText(context, "Please select at least one allergy", Toast.LENGTH_SHORT).show()
-            return false
-        }
-
-        // Check if "Others" is selected but custom field is empty
-        if ("Others" in selectedAllergies && customAllergy.isBlank()) {
-            Toast.makeText(context, "Please specify your allergy", Toast.LENGTH_SHORT).show()
-            return false
-        }
-
-        return true
-    }
 
     Column(
         modifier = Modifier
@@ -103,54 +311,40 @@ fun GeneralInfoStep(
 
         Column(modifier = Modifier.padding(horizontal = 9.dp)) {
 
-
             Row {
 
                 Text(
-                    text = stringResource(R.string.blood_group_label),//"Blood Group",
-                    color = Color.Black,
-                    fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-                    fontWeight = FontWeight.Normal,
-                    modifier = Modifier.padding(bottom = 6.dp)
+                    text = stringResource(R.string.blood_group_label),
+                    color = Color.Black
                 )
+
                 Text(
                     text = " *",
-                    color = Color.Red,
-                    fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-                    fontWeight = FontWeight.Normal,
-                    modifier = Modifier.padding(bottom = 6.dp)
+                    color = Color.Red
                 )
             }
 
-
             CustomPowerSpinner(
                 selectedText = bloodGroup,
-                onSelectionChanged = { reason ->
-                    bloodGroup = reason
-                },
-                reasons = bloodOptions // Pass the list of options here
+                onSelectionChanged = { bloodGroup = it },
+                reasons = bloodOptions
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Row{
-
+            Row {
 
                 Text(
-                    text = stringResource(R.string.known_allergies_label),//"Known Allergies",
+                    text = stringResource(R.string.known_allergies_label),
                     fontSize = 14.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = Color.Black,
-                    fontFamily = FontFamily(Font(R.font.urbanist_regular))
+                    color = Color.Black
                 )
+
                 Text(
                     text = "*",
-                    color = Color.Red,
-                    fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-                    fontWeight = FontWeight.Normal,
-                    modifier = Modifier.padding(bottom = 6.dp)
-                ) }
-
+                    color = Color.Red
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -163,8 +357,11 @@ fun GeneralInfoStep(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 userScrollEnabled = false
             ) {
+
                 items(allergyOptions) { item ->
+
                     val isSelected = item in selectedAllergies
+
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(40.dp))
@@ -176,17 +373,20 @@ fun GeneralInfoStep(
                             .background(
                                 if (isSelected) Color(0x205B4FFF) else Color.Transparent
                             )
-                            .clickable( interactionSource = remember { MutableInteractionSource() },
-                                indication = null){
-                                selectedAllergies = if (isSelected)
-                                    selectedAllergies - item
-                                else
-                                    selectedAllergies + item
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null
+                            ) {
+
+                                selectedAllergies =
+                                    if (isSelected) selectedAllergies - item
+                                    else selectedAllergies + item
                             }
                             .padding(vertical = 5.dp)
                             .fillMaxWidth(),
                         contentAlignment = Alignment.Center
                     ) {
+
                         Text(
                             text = item,
                             fontSize = 11.sp,
@@ -199,18 +399,20 @@ fun GeneralInfoStep(
             Spacer(modifier = Modifier.height(16.dp))
 
             if ("Others" in selectedAllergies) {
+
                 ProfileInputWithoutLabelField(
-                    placeholder = stringResource(R.string.write_allergy_placeholder),//"Write allergy",
+                    placeholder = stringResource(R.string.write_allergy_placeholder),
                     value = customAllergy,
                     onValueChange = { customAllergy = it }
                 )
+
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
             ProfileInputField(
-                label = stringResource(R.string.emergency_name_label),//"Emergency Contact Name (Optional)",
+                label = stringResource(R.string.emergency_name_label),
                 isImportant = false,
-                placeholder = stringResource(R.string.emergency_name_placeholder),//"e.g. Bob Dsouza",
+                placeholder = stringResource(R.string.emergency_name_placeholder),
                 value = emergencyName,
                 onValueChange = { emergencyName = it }
             )
@@ -218,19 +420,22 @@ fun GeneralInfoStep(
             Spacer(modifier = Modifier.height(16.dp))
 
             ProfileInputField(
-                label =stringResource(R.string.emergency_phone_label),// "Emergency Phone Number (Optional)",
+                label = stringResource(R.string.emergency_phone_label),
                 isImportant = false,
-                placeholder = stringResource(R.string.emergency_phone_placeholder),//"e.g. 555 945 325",
+                placeholder = stringResource(R.string.emergency_phone_placeholder),
                 value = emergencyPhone,
                 onValueChange = { emergencyPhone = it }
             )
 
             Spacer(modifier = Modifier.height(24.dp))
         }
-    /*    GradientButton(
-            text = stringResource(R.string.save_and_continue),//"Save & Continue",
+
+        GradientButton(
+            text = stringResource(R.string.save_and_continue),
             onClick = {
+
                 val allergiesList = selectedAllergies.toMutableList()
+
                 if ("Others" in selectedAllergies && customAllergy.isNotEmpty()) {
                     allergiesList.add(customAllergy)
                 }
@@ -239,29 +444,20 @@ fun GeneralInfoStep(
                     bloodGroup = bloodGroup,
                     allergies = allergiesList,
                     emergencyName = emergencyName,
-                    emergencyPhone = emergencyPhone
-                )
-                onNext()
-            }
-        )*/
-        GradientButton(
-            text = stringResource(R.string.save_and_continue),
-            onClick = {
-                if (validateFields()) {
-                    val allergiesList = selectedAllergies.toMutableList()
-                    if ("Others" in selectedAllergies && customAllergy.isNotEmpty()) {
-                        allergiesList.add(customAllergy)
+                    emergencyPhone = emergencyPhone,
+                    onSuccess = {
+                        Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_SHORT).show()
+                        onNext()
+                    },
+                    onError = { errorMsg ->
+                        Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
                     }
+                )
 
-                    viewModel.updateGeneralInfo(
-                        bloodGroup = bloodGroup,
-                        allergies = allergiesList,
-                        emergencyName = emergencyName,
-                        emergencyPhone = emergencyPhone
-                    )
-                    onNext()
-                }
+
             }
         )
     }
+
+
 }

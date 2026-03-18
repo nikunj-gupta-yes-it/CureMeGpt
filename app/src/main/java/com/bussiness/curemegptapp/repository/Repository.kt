@@ -103,4 +103,29 @@ interface Repository {
     ): Flow<NetworkResult<String>>
 
 
+    fun getGeneralProfile() : Flow<NetworkResult<User1>>
+
+    fun updateGeneralProfile(
+        bloodGroup: String,
+        allergies: String,
+         contactName: String,
+         contactNumber : String,
+    ) : Flow<NetworkResult<String>>
+
+    fun getGeneralProfileHistory() : Flow<NetworkResult<User1>>
+
+    suspend fun updateGeneralProfileHistory(
+         chronicConditions: String,
+         surgicalHistory: String,
+         currentMedication: String,
+         currentSupplement : String
+    ) : Flow<NetworkResult<String>>
+
+    fun getProfileDocuments() : Flow<NetworkResult<List<String>>>
+
+    fun completeProfileDocuments(
+        files: List<MultipartBody.Part>
+    ) : Flow<NetworkResult<String>>
+
+
 }

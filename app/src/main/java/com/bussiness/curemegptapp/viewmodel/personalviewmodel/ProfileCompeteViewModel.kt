@@ -274,7 +274,7 @@ open class ProfileCompeteViewModel @Inject constructor(private val repository: R
         }
 
         viewModelScope.launch {
-            repository.updatePersonalRequest(state.name,state.phone,
+            repository.updatePersonalRequest(state.name,state.phone.substringAfter(state.phone),
                 state.email,state.dob,state.gender,
                 state.height,state.heightType,
                 state.weight,

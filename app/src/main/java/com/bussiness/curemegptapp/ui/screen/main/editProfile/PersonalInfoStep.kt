@@ -2,6 +2,7 @@ package com.bussiness.curemegptapp.ui.screen.main.editProfile
 
 import android.net.Uri
 import android.os.Build
+import android.util.Log
 import android.util.Patterns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -43,6 +44,7 @@ import com.bussiness.curemegptapp.ui.dialog.CalendarDialog
 import com.bussiness.curemegptapp.ui.viewModel.auth.ProfileCompletionViewModel
 import com.bussiness.curemegptapp.ui.viewModel.main.AddFamilyMemberViewModel
 import com.bussiness.curemegptapp.ui.viewModel.main.EditProfileViewModel
+import com.bussiness.curemegptapp.util.CommonUtils
 import com.bussiness.curemegptapp.util.UriToRequestBody
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -403,11 +405,8 @@ fun PersonalInfoStep(
         )
     }
 
-    val heightValue = profile.height.split(" ").getOrNull(0) ?: ""
-    val heightUnit = profile.height.split(" ").getOrNull(1) ?: "Cm"
-
-    val weightValue = profile.weight.split(" ").getOrNull(0) ?: ""
-    val weightUnit = profile.weight.split(" ").getOrNull(1) ?: "Kg"
+    val (heightValue, heightUnit) = CommonUtils.splitValueUnit(profile.height, "Cm")
+    val (weightValue, weightUnit) = CommonUtils.splitValueUnit(profile.weight, "Kg")
 
     var selectedProfilePhotoUri by remember { mutableStateOf<Uri?>(null) }
 
@@ -564,7 +563,8 @@ fun PersonalInfoStep(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-
+         Log.d("TESTING_HEIGHT_WEIGHT", "Height Value: $heightValue, Height Unit: $heightUnit")
+         Log.d("TESTING_HEIGHT_WEIGHT", "Weight Value: $weightValue, Weight Unit: $weightUnit")
         Dropdown1(
             label = stringResource(R.string.height_label),
             isImportant = true,
@@ -649,7 +649,7 @@ fun PersonalInfoStep(
                         }
                     )
 
-                  
+
                 }
             }
         )

@@ -7,6 +7,7 @@ import com.bussiness.curemegptapp.apimodel.loginmodel.LoginResponse
 import com.bussiness.curemegptapp.apimodel.personalmodel.PersonalModel
 import com.bussiness.curemegptapp.apimodel.personalmodel.ProfileResponse
 import com.bussiness.curemegptapp.apimodel.profilemodel.UserProfileResponse
+import com.google.gson.Gson
 import kotlinx.serialization.json.JsonObject
 import com.google.gson.JsonObject as GsonJsonObject
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -199,5 +200,40 @@ interface ApiService {
         @Part profile_image:  MultipartBody.Part?
     ): Response<GsonJsonObject>
 
+
+    @POST("get_general_profile")
+    suspend fun getGeneralProfile() : Response<GsonJsonObject>
+
+    @POST("complete_general_profile")
+    @FormUrlEncoded
+    suspend fun completeGeneralProfile(
+        @Field("blood_group") bloodGroup: String,
+        @Field("allergies[]") allergies: String,
+        @Field("emergency_contact_name") contactName: String,
+        @Field("emergency_contact_number") contactNumber : String,
+    ) : Response<GsonJsonObject>
+
+
+    @POST("get_general_profile_history")
+    suspend fun getGeneralProfileHistory() : Response<GsonJsonObject>
+
+    @POST("complete_general_profile_history")
+    @FormUrlEncoded
+    suspend fun updateGeneralProfileHistory(
+        @Field("chronic_condition[]") chronicConditions: String,
+        @Field("surgical_history") surgicalHistory: String,
+        @Field("current_medications[]") currentMedication: String,
+        @Field("current_supplements[]") currentSupplement : String
+        ): Response<GsonJsonObject>
+
+    @POST("get_profile_documents")
+    suspend fun getProfileDocuments() : Response<GsonJsonObject>
+
+
+    @POST("complete_profile_documents")
+    @Multipart
+    suspend fun completeProfileDocuments(
+        @Part files: List<MultipartBody.Part>
+    ) : Response<GsonJsonObject>
 
 }

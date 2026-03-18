@@ -559,15 +559,17 @@ fun Dropdown1(
     keyboardType: KeyboardType = KeyboardType.Number
 ) {
 
+    Log.d("TESTING_PROFILE_COMPLETION","Value is "+value)
+
     var expanded by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(30.dp)
 
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
-
         // 🔹 Label Row
         Row(verticalAlignment = Alignment.CenterVertically) {
+
             Text(
                 text = buildLabelWithOptional(label),
                 color = Color.Black,
@@ -578,13 +580,16 @@ fun Dropdown1(
             )
 
             if (isImportant) {
+
                 Text(
                     text = "*",
                     fontSize = 15.sp,
                     color = Color.Red,
                     modifier = Modifier.padding(bottom = 6.dp)
                 )
+
             }
+
         }
 
         // 🔹 INPUT + DROPDOWN ROW

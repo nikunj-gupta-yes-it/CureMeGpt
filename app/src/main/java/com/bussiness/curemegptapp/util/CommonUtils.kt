@@ -12,4 +12,27 @@ object CommonUtils {
         return outputFormat.format(date)
     }
 
+
+    fun splitValueUnit(input: String, defaultUnit: String): Pair<String, String> {
+        val parts = input.trim().split(" ")
+
+        if (parts.size >= 2) {
+            return Pair(parts[0], parts[1])
+        }
+
+        // If no space, separate numeric and alphabetic
+        val match = Regex("(\\d+(?:\\.\\d+)?)([a-zA-Z]+)").find(input)
+
+        return if (match != null) {
+            val (value, unit) = match.destructured
+            Pair(value, unit)
+        } else {
+            Pair(input, defaultUnit)
+        }
+    }
+
+
+
+
+
 }

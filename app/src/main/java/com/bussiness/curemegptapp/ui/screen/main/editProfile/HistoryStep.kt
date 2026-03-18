@@ -26,6 +26,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,23 +60,445 @@ fun HistoryStep(
     profileData: ProfileData,
     onNext: () -> Unit
 ) {
+//    var selectedConditions by remember { mutableStateOf(setOf<String>()) }
+//    var surgicalHistory by remember { mutableStateOf("") }
+//    var currentMedications by remember { mutableStateOf(listOf("")) }
+//    var currentSupplements by remember { mutableStateOf(listOf("")) }
+//    var customCondition by remember { mutableStateOf("") }
+//    val context = LocalContext.current
+//    val conditions = listOf(
+//        "Diabetes", "Asthma", "Hypertension", "Thyroid",
+//        "Arthritis", "Heart Disease", "Anxiety", "Depression", "Others"
+//    )
+//    fun validateFields(): Boolean {
+//        if (selectedConditions.isEmpty()) {
+//            Toast.makeText(context, "Please select at least one chronic condition", Toast.LENGTH_SHORT).show()
+//            return false
+//        }
+//
+//        // Check if "Others" is selected but custom field is empty
+//        if ("Others" in selectedConditions && customCondition.isBlank()) {
+//            Toast.makeText(context, "Please specify your condition", Toast.LENGTH_SHORT).show()
+//            return false
+//        }
+//
+//        return true
+//    }
+//
+//    Column(
+//        modifier = Modifier
+//            .fillMaxSize()
+//            .verticalScroll(rememberScrollState())
+//            .padding(16.dp)
+//    ) {
+//        Column(modifier = Modifier.padding(horizontal = 9.dp)) {
+//
+//            Row {
+//                Text(
+//                    text = stringResource(R.string.chronic_conditions_label),//"Chronic Conditions",
+//                    fontSize = 14.sp,
+//                    fontWeight = FontWeight.Normal,
+//                    color = Color.Black,
+//                    fontFamily = FontFamily(Font(R.font.urbanist_regular))
+//                )
+//                Text(
+//                    text = "*",
+//                    color = Color.Red,
+//                    fontFamily = FontFamily(Font(R.font.urbanist_regular)),
+//                    fontWeight = FontWeight.Normal,
+//                    modifier = Modifier.padding(bottom = 6.dp)
+//                )
+//            }
+//
+//            Spacer(modifier = Modifier.height(8.dp))
+//
+//            // ⭐ Same UI as allergies → 3-column Grid chips
+//            LazyVerticalGrid(
+//                columns = GridCells.Fixed(3),
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .heightIn(max = 600.dp),
+//                horizontalArrangement = Arrangement.spacedBy(10.dp),
+//                verticalArrangement = Arrangement.spacedBy(10.dp),
+//                userScrollEnabled = false
+//            ) {
+//
+//                items(conditions) { condition ->
+//
+//                    val isSelected = condition in selectedConditions
+//
+//                    Box(
+//                        modifier = Modifier
+//                            .clip(RoundedCornerShape(40.dp))
+//                            .border(
+//                                1.dp,
+//                                if (isSelected) Color(0xFF5B4FFF) else Color(0xFFE0E0E0),
+//                                RoundedCornerShape(40.dp)
+//                            )
+//                            .background(
+//                                if (isSelected) Color(0x205B4FFF) else Color.Transparent
+//                            )
+//                            .clickable(
+//                                interactionSource = remember { MutableInteractionSource() },
+//                                indication = null
+//                            ) {
+//                                selectedConditions =
+//                                    if (isSelected) selectedConditions - condition
+//                                    else selectedConditions + condition
+//                            }
+//                            .padding(vertical = 6.dp)
+//                            .fillMaxWidth(),
+//                        contentAlignment = Alignment.Center
+//                    ) {
+//                        Text(
+//                            text = condition,
+//                            fontSize = 11.sp,
+//                            color = if (isSelected) Color(0xFF5B4FFF) else Color.Black
+//                        )
+//                    }
+//                }
+//            }
+//
+//            Spacer(modifier = Modifier.height(16.dp))
+//            // ⭐ Custom allergy field — only if Others selected
+//            if ("Others" in selectedConditions) {
+//
+//                ProfileInputWithoutLabelField(
+//                    placeholder = stringResource(R.string.write_condition_placeholder),//"Write Condition",
+//                    value = customCondition,
+//                    onValueChange = { customCondition = it }
+//                )
+//
+//                Spacer(modifier = Modifier.height(16.dp))
+//            }
+//        }
+//        Spacer(modifier = Modifier.height(16.dp))
+//
+//        ProfileInputMultipleLineField(
+//            label = stringResource(R.string.surgical_history_label),//"Surgical History (Optional)",
+//            isImportant = false,
+//            placeholder = stringResource(R.string.surgical_history_placeholder),//"Any previous surgeries or major medical procedures...",
+//            value = surgicalHistory,
+//            onValueChange = { surgicalHistory = it }
+//        )
+//
+//        Spacer(modifier = Modifier.height(16.dp))
+//
+//        Column(modifier = Modifier.padding(horizontal = 9.dp)) {
+//            Text(
+//                text = buildLabelWithOptional(stringResource(R.string.current_medications_label)),//"Current Medications (Optional)",
+//                fontSize = 14.sp,
+//                fontWeight = FontWeight.Normal,
+//                color = Color.Black,
+//                fontFamily = FontFamily(Font(R.font.urbanist_regular))
+//            )
+//            Spacer(modifier = Modifier.height(8.dp))
+//
+//            currentMedications.forEachIndexed { index, medication ->
+//
+//                Row(
+//                    modifier = Modifier.fillMaxWidth(),
+//                    verticalAlignment = Alignment.CenterVertically
+//                ) {
+//
+//                    OutlinedTextField(
+//                        value = medication,
+//                        onValueChange = { newValue ->
+//                            // ⭐ Sirf first item editable hona chahiye
+//                            if (index == 0) {
+//                                val updated = currentMedications.toMutableList()
+//                                updated[index] = newValue
+//                                currentMedications = updated
+//                            }
+//                        },
+//                        placeholder = {
+//                           // if (index == 0)
+//                             //   Text(stringResource(R.string.medications_placeholder),/*"Any medications you're currently taking..."*/)
+//                           // else
+//                           //     Text(stringResource(R.string.added_item_placeholder),/*"Added item"*/)  // non editable item placeholder
+//                            if (index == 0)
+//                                Text(
+//                                    text = stringResource(R.string.medications_placeholder),
+//                                    color = Color(0xFF697383),   // ✅ placeholder black
+//                                    fontSize = 13.sp,
+//                                    fontFamily = FontFamily(Font(R.font.urbanist_regular)),
+//                                    fontWeight = FontWeight.Normal
+//                                )
+//                            else
+//                                Text(
+//                                    text = stringResource(R.string.added_item_placeholder),
+//                                    color = Color(0xFF697383),   // ✅ non-editable placeholder bhi black
+//                                    fontSize = 13.sp,
+//                                    fontFamily = FontFamily(Font(R.font.urbanist_regular)),
+//                                    fontWeight = FontWeight.Normal
+//                                )
+//                        },
+//                        textStyle = TextStyle(
+//                            color = Color.Black,
+//                            fontSize = 13.sp,
+//                            fontFamily = FontFamily(Font(R.font.urbanist_regular)),
+//                            fontWeight = FontWeight.Normal
+//                        ),
+//                        modifier = Modifier
+//                            .weight(1f)
+//                            .clip(RoundedCornerShape(30.dp))
+//                            .border(1.dp, Color(0xFFC3C6CB), RoundedCornerShape(30.dp)),
+//                        enabled = index == 0,    // ⭐ only first row editable
+//                        colors = TextFieldDefaults.colors(
+//                            unfocusedContainerColor = Color.White,
+//                            focusedContainerColor = Color.White,
+//                            disabledContainerColor = Color.White,
+//                            focusedIndicatorColor = Color.Transparent,
+//                            unfocusedIndicatorColor = Color.Transparent,
+//                            disabledIndicatorColor = Color.Transparent
+//                        )
+//                    )
+//
+//                    if (index == 0) {
+//                        // ⭐ ADD ICON only for the FIRST item
+//                        Image(
+//                            painter = painterResource(id = R.drawable.ic_add_icon),
+//                            contentDescription = "Add",
+//                            modifier = Modifier
+//                                .padding(start = 8.dp)
+//                                .clickable(
+//                                    interactionSource = remember { MutableInteractionSource() },
+//                                    indication = null
+//                                ) {
+//
+//                                    // ⭐ Add tabhi hoga jab first field empty na ho
+//                                    if (currentMedications[0].isNotBlank()) {
+//                                        //   currentMedications = currentMedications + medication
+//                                        val updated = currentMedications.toMutableList()
+//
+//                                        // ⭐ 1. Add a new empty item at bottom
+//                                        updated.add(currentMedications[0])
+//
+//                                        // ⭐ 2. Clear first input field
+//                                        updated[0] = ""
+//
+//                                        currentMedications = updated
+//                                    }
+//                                }
+//                        )
+//                    } else {
+//                        // ⭐ Other items → REMOVE icon
+//                        Image(
+//                            painter = painterResource(id = R.drawable.ic_remove_icon),
+//                            contentDescription = "Remove",
+//                            modifier = Modifier
+//                                .padding(start = 8.dp)
+//                                .clickable(
+//                                    interactionSource = remember { MutableInteractionSource() },
+//                                    indication = null
+//                                ) {
+//                                    val updated = currentMedications.toMutableList()
+//                                    updated.removeAt(index)
+//                                    currentMedications = updated
+//                                }
+//                        )
+//                    }
+//                }
+//
+//                Spacer(modifier = Modifier.height(8.dp))
+//            }
+//
+//
+//
+//            Spacer(modifier = Modifier.height(16.dp))
+//
+//
+//            // ⭐ Current Supplements
+//            Text(
+//                text = buildLabelWithOptional(stringResource(R.string.current_supplements_label))/*"Current Supplements (Optional)"*/,
+//                fontSize = 14.sp,
+//                fontWeight = FontWeight.Normal,
+//                color = Color.Black,
+//                fontFamily = FontFamily(Font(R.font.urbanist_regular))
+//            )
+//            Spacer(modifier = Modifier.height(8.dp))
+//
+//            currentSupplements.forEachIndexed { index, supplement ->
+//
+//                Row(
+//                    modifier = Modifier.fillMaxWidth(),
+//                    verticalAlignment = Alignment.CenterVertically
+//                ) {
+//
+//                    OutlinedTextField(
+//                        value = supplement,
+//                        onValueChange = { newValue ->
+//                            // ⭐ Sirf first item editable hona chahiye
+//                            if (index == 0) {
+//                                val updated = currentSupplements.toMutableList()
+//                                updated[index] = newValue
+//                                currentSupplements = updated
+//                            }
+//                        },
+//                        placeholder = {
+//                            //if (index == 0)
+//                             //   Text(stringResource(R.string.supplements_placeholder)/*"Any supplements you're currently taking..."*/)
+//                          //  else
+//                             //   Text(stringResource(R.string.added_item_placeholder)/*"Added item"*/)
+//                            if (index == 0)
+//                            Text(
+//                                text = stringResource(R.string.supplements_placeholder),
+//                                color = Color(0xFF697383),   // ✅ placeholder black
+//                                fontSize = 13.sp,
+//                                fontFamily = FontFamily(Font(R.font.urbanist_regular)),
+//                                fontWeight = FontWeight.Normal
+//                            )
+//                            else
+//                            Text(
+//                                text = stringResource(R.string.added_item_placeholder),
+//                                color = Color(0xFF697383),   // ✅ non-editable placeholder bhi black
+//                                fontSize = 13.sp,
+//                                fontFamily = FontFamily(Font(R.font.urbanist_regular)),
+//                                fontWeight = FontWeight.Normal
+//                            )
+//                        },
+//                        modifier = Modifier
+//                            .weight(1f)
+//                            .clip(RoundedCornerShape(30.dp))
+//                            .border(
+//                                1.dp,
+//                                Color(0xFFC3C6CB),
+//                                RoundedCornerShape(30.dp)
+//                            ),
+//                        textStyle = TextStyle(
+//                            color = Color.Black,
+//                            fontSize = 13.sp,
+//                            fontFamily = FontFamily(Font(R.font.urbanist_regular)),
+//                            fontWeight = FontWeight.Normal
+//                        ),
+//                        enabled = index == 0,   // ⭐ only first item editable
+//                        colors = TextFieldDefaults.colors(
+//                            unfocusedContainerColor = Color.White,
+//                            focusedContainerColor = Color.White,
+//                            disabledContainerColor = Color.White, // ⭐ FIX
+//                            focusedIndicatorColor = Color.Transparent,
+//                            unfocusedIndicatorColor = Color.Transparent,
+//                            disabledIndicatorColor = Color.Transparent
+//                        )
+//                    )
+//
+//                    if (index == 0) {
+//                        // ⭐ ADD icon - first item only
+//                        Image(
+//                            painter = painterResource(id = R.drawable.ic_add_icon),
+//                            contentDescription = "Add",
+//                            modifier = Modifier
+//                                .padding(start = 8.dp)
+//                                .clickable(
+//                                    interactionSource = remember { MutableInteractionSource() },
+//                                    indication = null
+//                                ) {
+//
+//                                    if (currentSupplements[0].isNotBlank()) {
+//
+//                                        val updated = currentSupplements.toMutableList()
+//
+//                                        // ⭐ Add new item in list
+//                                        updated.add(currentSupplements[0])
+//
+//                                        // ⭐ Clear first input
+//                                        updated[0] = ""
+//
+//                                        currentSupplements = updated
+//                                    }
+//                                }
+//                        )
+//                    } else {
+//                        // ⭐ REMOVE icon - for added items
+//                        Image(
+//                            painter = painterResource(id = R.drawable.ic_remove_icon),
+//                            contentDescription = "Remove",
+//                            modifier = Modifier
+//                                .padding(start = 8.dp)
+//                                .clickable(
+//                                    interactionSource = remember { MutableInteractionSource() },
+//                                    indication = null
+//                                ) {
+//                                    val updated = currentSupplements.toMutableList()
+//                                    updated.removeAt(index)
+//                                    currentSupplements = updated
+//                                }
+//                        )
+//                    }
+//                }
+//
+//                Spacer(modifier = Modifier.height(8.dp))
+//            }
+//
+//
+//            Spacer(modifier = Modifier.height(24.dp))
+//        }
+//        GradientButton(
+//            text = stringResource(R.string.save_and_continue),//"Save & Continue",
+//            onClick = {
+//                if (validateFields()) {
+//                    val conditionsList = selectedConditions.toMutableList()
+//                    if ("Others" in selectedConditions && customCondition.isNotEmpty()) {
+//                        conditionsList.add(customCondition)
+//                    }
+//
+//                    viewModel.updateMedicalHistory(
+//                        chronicConditions = conditionsList,
+//                        surgicalHistory = surgicalHistory,
+//                        currentMedications = currentMedications.filter { it.isNotBlank() },
+//                        currentSupplements = currentSupplements.filter { it.isNotBlank() }
+//                    )
+//                    onNext()
+//                }
+//            }
+//        )
+//
+//        Spacer(modifier = Modifier.height(16.dp))
+//    }
+
+
+    val context = LocalContext.current
+
+    // Observe ViewModel state
+    val profileState = viewModel.profileFormState
+
+    // Form state
     var selectedConditions by remember { mutableStateOf(setOf<String>()) }
+    var customCondition by remember { mutableStateOf("") }
     var surgicalHistory by remember { mutableStateOf("") }
     var currentMedications by remember { mutableStateOf(listOf("")) }
     var currentSupplements by remember { mutableStateOf(listOf("")) }
-    var customCondition by remember { mutableStateOf("") }
-    val context = LocalContext.current
+
     val conditions = listOf(
         "Diabetes", "Asthma", "Hypertension", "Thyroid",
         "Arthritis", "Heart Disease", "Anxiety", "Depression", "Others"
     )
+
+
+    LaunchedEffect(profileState) {
+        selectedConditions = profileState.chronicConditions.toSet()
+        customCondition =
+            profileState.chronicConditions.find { it !in conditions } ?: ""
+        surgicalHistory = profileState.surgicalHistory
+        currentMedications =
+            if (profileState.currentMedications.isNotEmpty()) profileState.currentMedications
+            else listOf("")
+        currentSupplements =
+            if (profileState.currentSupplements.isNotEmpty()) profileState.currentSupplements
+            else listOf("")
+    }
+    LaunchedEffect(Unit) {
+        viewModel.getMedicalHistory {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+        }
+    }
+
     fun validateFields(): Boolean {
         if (selectedConditions.isEmpty()) {
             Toast.makeText(context, "Please select at least one chronic condition", Toast.LENGTH_SHORT).show()
             return false
         }
 
-        // Check if "Others" is selected but custom field is empty
         if ("Others" in selectedConditions && customCondition.isBlank()) {
             Toast.makeText(context, "Please specify your condition", Toast.LENGTH_SHORT).show()
             return false
@@ -94,9 +517,8 @@ fun HistoryStep(
 
             Row {
                 Text(
-                    text = stringResource(R.string.chronic_conditions_label),//"Chronic Conditions",
+                    text = stringResource(R.string.chronic_conditions_label),
                     fontSize = 14.sp,
-                    fontWeight = FontWeight.Normal,
                     color = Color.Black,
                     fontFamily = FontFamily(Font(R.font.urbanist_regular))
                 )
@@ -104,14 +526,11 @@ fun HistoryStep(
                     text = "*",
                     color = Color.Red,
                     fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-                    fontWeight = FontWeight.Normal,
-                    modifier = Modifier.padding(bottom = 6.dp)
                 )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // ⭐ Same UI as allergies → 3-column Grid chips
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
                 modifier = Modifier
@@ -121,9 +540,7 @@ fun HistoryStep(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 userScrollEnabled = false
             ) {
-
                 items(conditions) { condition ->
-
                     val isSelected = condition in selectedConditions
 
                     Box(
@@ -159,51 +576,48 @@ fun HistoryStep(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            // ⭐ Custom allergy field — only if Others selected
-            if ("Others" in selectedConditions) {
 
+            if ("Others" in selectedConditions) {
                 ProfileInputWithoutLabelField(
-                    placeholder = stringResource(R.string.write_condition_placeholder),//"Write Condition",
+                    placeholder = stringResource(R.string.write_condition_placeholder),
                     value = customCondition,
                     onValueChange = { customCondition = it }
                 )
-
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
+
         Spacer(modifier = Modifier.height(16.dp))
 
         ProfileInputMultipleLineField(
-            label = stringResource(R.string.surgical_history_label),//"Surgical History (Optional)",
+            label = stringResource(R.string.surgical_history_label),
             isImportant = false,
-            placeholder = stringResource(R.string.surgical_history_placeholder),//"Any previous surgeries or major medical procedures...",
+            placeholder = stringResource(R.string.surgical_history_placeholder),
             value = surgicalHistory,
             onValueChange = { surgicalHistory = it }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Current Medications
         Column(modifier = Modifier.padding(horizontal = 9.dp)) {
             Text(
-                text = buildLabelWithOptional(stringResource(R.string.current_medications_label)),//"Current Medications (Optional)",
+                text = buildLabelWithOptional(stringResource(R.string.current_medications_label)),
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Normal,
                 color = Color.Black,
                 fontFamily = FontFamily(Font(R.font.urbanist_regular))
             )
+
             Spacer(modifier = Modifier.height(8.dp))
 
             currentMedications.forEachIndexed { index, medication ->
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-
                     OutlinedTextField(
                         value = medication,
                         onValueChange = { newValue ->
-                            // ⭐ Sirf first item editable hona chahiye
                             if (index == 0) {
                                 val updated = currentMedications.toMutableList()
                                 updated[index] = newValue
@@ -211,50 +625,34 @@ fun HistoryStep(
                             }
                         },
                         placeholder = {
-                           // if (index == 0)
-                             //   Text(stringResource(R.string.medications_placeholder),/*"Any medications you're currently taking..."*/)
-                           // else
-                           //     Text(stringResource(R.string.added_item_placeholder),/*"Added item"*/)  // non editable item placeholder
-                            if (index == 0)
-                                Text(
-                                    text = stringResource(R.string.medications_placeholder),
-                                    color = Color(0xFF697383),   // ✅ placeholder black
-                                    fontSize = 13.sp,
-                                    fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-                                    fontWeight = FontWeight.Normal
-                                )
-                            else
-                                Text(
-                                    text = stringResource(R.string.added_item_placeholder),
-                                    color = Color(0xFF697383),   // ✅ non-editable placeholder bhi black
-                                    fontSize = 13.sp,
-                                    fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-                                    fontWeight = FontWeight.Normal
-                                )
+                            Text(
+                                text = if (index == 0)
+                                    stringResource(R.string.medications_placeholder)
+                                else stringResource(R.string.added_item_placeholder),
+                                color = Color(0xFF697383),
+                                fontSize = 13.sp,
+                                fontFamily = FontFamily(Font(R.font.urbanist_regular))
+                            )
                         },
                         textStyle = TextStyle(
                             color = Color.Black,
-                            fontSize = 13.sp,
-                            fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-                            fontWeight = FontWeight.Normal
+                            fontSize = 13.sp
                         ),
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(30.dp))
                             .border(1.dp, Color(0xFFC3C6CB), RoundedCornerShape(30.dp)),
-                        enabled = index == 0,    // ⭐ only first row editable
+                        enabled = index == 0,
                         colors = TextFieldDefaults.colors(
                             unfocusedContainerColor = Color.White,
                             focusedContainerColor = Color.White,
                             disabledContainerColor = Color.White,
                             focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            disabledIndicatorColor = Color.Transparent
+                            unfocusedIndicatorColor = Color.Transparent
                         )
                     )
 
                     if (index == 0) {
-                        // ⭐ ADD ICON only for the FIRST item
                         Image(
                             painter = painterResource(id = R.drawable.ic_add_icon),
                             contentDescription = "Add",
@@ -264,24 +662,15 @@ fun HistoryStep(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
                                 ) {
-
-                                    // ⭐ Add tabhi hoga jab first field empty na ho
                                     if (currentMedications[0].isNotBlank()) {
-                                        //   currentMedications = currentMedications + medication
                                         val updated = currentMedications.toMutableList()
-
-                                        // ⭐ 1. Add a new empty item at bottom
                                         updated.add(currentMedications[0])
-
-                                        // ⭐ 2. Clear first input field
                                         updated[0] = ""
-
                                         currentMedications = updated
                                     }
                                 }
                         )
                     } else {
-                        // ⭐ Other items → REMOVE icon
                         Image(
                             painter = painterResource(id = R.drawable.ic_remove_icon),
                             contentDescription = "Remove",
@@ -302,32 +691,24 @@ fun HistoryStep(
                 Spacer(modifier = Modifier.height(8.dp))
             }
 
-
-
             Spacer(modifier = Modifier.height(16.dp))
 
-
-            // ⭐ Current Supplements
+            // Current Supplements - same logic as medications
             Text(
-                text = buildLabelWithOptional(stringResource(R.string.current_supplements_label))/*"Current Supplements (Optional)"*/,
+                text = buildLabelWithOptional(stringResource(R.string.current_supplements_label)),
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Normal,
-                color = Color.Black,
-                fontFamily = FontFamily(Font(R.font.urbanist_regular))
+                color = Color.Black
             )
             Spacer(modifier = Modifier.height(8.dp))
 
             currentSupplements.forEachIndexed { index, supplement ->
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-
                     OutlinedTextField(
                         value = supplement,
                         onValueChange = { newValue ->
-                            // ⭐ Sirf first item editable hona chahiye
                             if (index == 0) {
                                 val updated = currentSupplements.toMutableList()
                                 updated[index] = newValue
@@ -335,54 +716,30 @@ fun HistoryStep(
                             }
                         },
                         placeholder = {
-                            //if (index == 0)
-                             //   Text(stringResource(R.string.supplements_placeholder)/*"Any supplements you're currently taking..."*/)
-                          //  else
-                             //   Text(stringResource(R.string.added_item_placeholder)/*"Added item"*/)
-                            if (index == 0)
                             Text(
-                                text = stringResource(R.string.supplements_placeholder),
-                                color = Color(0xFF697383),   // ✅ placeholder black
-                                fontSize = 13.sp,
-                                fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-                                fontWeight = FontWeight.Normal
-                            )
-                            else
-                            Text(
-                                text = stringResource(R.string.added_item_placeholder),
-                                color = Color(0xFF697383),   // ✅ non-editable placeholder bhi black
-                                fontSize = 13.sp,
-                                fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-                                fontWeight = FontWeight.Normal
+                                text = if (index == 0)
+                                    stringResource(R.string.supplements_placeholder)
+                                else stringResource(R.string.added_item_placeholder),
+                                color = Color(0xFF697383),
+                                fontSize = 13.sp
                             )
                         },
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(30.dp))
-                            .border(
-                                1.dp,
-                                Color(0xFFC3C6CB),
-                                RoundedCornerShape(30.dp)
-                            ),
-                        textStyle = TextStyle(
-                            color = Color.Black,
-                            fontSize = 13.sp,
-                            fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-                            fontWeight = FontWeight.Normal
-                        ),
-                        enabled = index == 0,   // ⭐ only first item editable
+                            .border(1.dp, Color(0xFFC3C6CB), RoundedCornerShape(30.dp)),
+                        textStyle = TextStyle(color = Color.Black, fontSize = 13.sp),
+                        enabled = index == 0,
                         colors = TextFieldDefaults.colors(
                             unfocusedContainerColor = Color.White,
                             focusedContainerColor = Color.White,
-                            disabledContainerColor = Color.White, // ⭐ FIX
+                            disabledContainerColor = Color.White,
                             focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            disabledIndicatorColor = Color.Transparent
+                            unfocusedIndicatorColor = Color.Transparent
                         )
                     )
 
                     if (index == 0) {
-                        // ⭐ ADD icon - first item only
                         Image(
                             painter = painterResource(id = R.drawable.ic_add_icon),
                             contentDescription = "Add",
@@ -392,23 +749,15 @@ fun HistoryStep(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
                                 ) {
-
                                     if (currentSupplements[0].isNotBlank()) {
-
                                         val updated = currentSupplements.toMutableList()
-
-                                        // ⭐ Add new item in list
                                         updated.add(currentSupplements[0])
-
-                                        // ⭐ Clear first input
                                         updated[0] = ""
-
                                         currentSupplements = updated
                                     }
                                 }
                         )
                     } else {
-                        // ⭐ REMOVE icon - for added items
                         Image(
                             painter = painterResource(id = R.drawable.ic_remove_icon),
                             contentDescription = "Remove",
@@ -428,12 +777,12 @@ fun HistoryStep(
 
                 Spacer(modifier = Modifier.height(8.dp))
             }
-
-
-            Spacer(modifier = Modifier.height(24.dp))
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
         GradientButton(
-            text = stringResource(R.string.save_and_continue),//"Save & Continue",
+            text = stringResource(R.string.save_and_continue),
             onClick = {
                 if (validateFields()) {
                     val conditionsList = selectedConditions.toMutableList()
@@ -445,13 +794,19 @@ fun HistoryStep(
                         chronicConditions = conditionsList,
                         surgicalHistory = surgicalHistory,
                         currentMedications = currentMedications.filter { it.isNotBlank() },
-                        currentSupplements = currentSupplements.filter { it.isNotBlank() }
+                        currentSupplements = currentSupplements.filter { it.isNotBlank() },{
+                            onNext()
+                        },{
+                            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+                        }
                     )
-                    onNext()
+
                 }
             }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
     }
+
+
 }

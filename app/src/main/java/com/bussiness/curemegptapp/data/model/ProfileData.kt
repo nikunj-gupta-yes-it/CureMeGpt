@@ -21,5 +21,6 @@ data class ProfileData(
     var currentMedications: List<String> = emptyList(),
     var currentSupplements: List<String> = emptyList(),
     var uploadedFiles: List<Uri> = emptyList(),
+    var uploadedDocument :List<String> = emptyList(),
     var profileImage :String=""
 )

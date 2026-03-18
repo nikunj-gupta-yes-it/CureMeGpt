@@ -2,6 +2,7 @@ package com.bussiness.curemegptapp.ui.viewModel.main
 
 //EditProfileViewModel
 
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import androidx.compose.runtime.getValue
@@ -32,53 +33,9 @@ class EditProfileViewModel @Inject constructor(
 
     val currentStep = mutableStateOf(0)
 
+    val uploadedFilesUrl = mutableListOf<String>()
     // All profile data
     val profileData = mutableStateOf(ProfileData())
-//
-//    fun getProfileData(
-//        onSuccess: () -> Unit,
-//        onError: (msg: String) -> Unit
-//    ){
-//        viewModelScope.launch {
-//            LoaderManager.show()
-//            repository.getPersonalProfile().collectLatest {
-//                when(it){
-//                    is Resource.Success -> {
-//                        Log.e("ProfileCompletionVM", "Inside Sucess Here")
-//
-//                        LoaderManager.hide()
-//                        val userData =  it.data.data?.user
-//                        val baseUrl = AppConstant.IMAGE_BASE_URL // Replace with your actual base URL
-//
-//                        val profileImage = userData?.profile_photo
-//                            ?.takeIf { it.isNotBlank() }
-//                            ?.let { "$baseUrl$it" } ?: ""
-//                        profileData.value = profileData.value.copy(
-//                            id = userData?.id ?: 0,
-//                            fullName = userData?.name ?: "",
-//                            contactNumber = userData?.phone ?: "",
-//                            email = userData?.email ?: "",
-//                            dateOfBirth = userData?.dob ?: "",
-//                            gender = userData?.gender ?: "",
-//                            height = userData?.height ?: "",
-//                            weight = userData?.weight ?: "",
-//                            profileImage = profileImage ?: ""
-//                        )
-//                        onSuccess()
-//                    }
-//                    is Resource.Error -> {
-//                        LoaderManager.hide()
-//                        Log.e("ProfileCompletionVM", "Error updating medical history: ${it.message}")
-//                        onError(it.message ?: "An error occurred")
-//                    }
-//                    else -> {
-//
-//                    }
-//                }
-//
-//            }
-//        }
-//    }
 
     var profileFormState by mutableStateOf(ProfileData())
         private set
@@ -98,13 +55,14 @@ class EditProfileViewModel @Inject constructor(
                         LoaderManager.hide()
                         val user = result.data
                         val baseUrl = AppConstant.IMAGE_BASE_URL
+
                         val image = user?.profile_photo
                             ?.takeIf { it.isNotBlank() }
                             ?.let { "$baseUrl$it" } ?: ""
                         profileFormState = profileFormState.copy(
                             id = user?.id ?: 0,
                             fullName = user?.name ?: "",
-                            contactNumber = user?.phone ?: "",
+                            contactNumber =  user?.phone?.substringAfter(" ") ?: "",
                             email = user?.email ?: "",
                             dateOfBirth = user?.dob ?: "",
                             gender = user?.gender ?: "",
@@ -126,6 +84,123 @@ class EditProfileViewModel @Inject constructor(
             }
         }
     }
+
+    fun getGeneralProfile(onError: (String) -> Unit){
+        viewModelScope.launch {
+            LoaderManager.show()
+                repository.getGeneralProfile().collectLatest { result ->
+                    when (result) {
+                        is NetworkResult.Success -> {
+                            LoaderManager.hide()
+                            val user = result.data
+                            Log.d("TESTING_ALLERGIES", "Allergies string: ${user?.allergies}")
+                            profileFormState = profileFormState.copy(
+                                 bloodGroup = user?.blood_group ?: "Select",
+                                 allergies = user?.allergies
+                                     ?.split(",")
+                                     ?.map { it.trim() } ?: emptyList(),
+                                 emergencyContactName = user?.emergency_contact_name ?: "",
+                                 emergencyContactPhone = user?.emergency_contact_number ?: ""
+                            )
+
+                        }
+
+                        is NetworkResult.Error -> {
+                            LoaderManager.hide()
+                            onError(result.message ?: "Something went wrong")
+                        }
+
+                        else -> {}
+                    }
+                }
+        }
+    }
+
+    fun getMedicalHistory(onError: (String) -> Unit){
+        viewModelScope.launch {
+            LoaderManager.show()
+            repository.getGeneralProfileHistory().collectLatest { result ->
+                when (result) {
+                    is NetworkResult.Success -> {
+                        LoaderManager.hide()
+                        val user = result.data
+                        profileFormState = profileFormState.copy(
+                            chronicConditions = user?.chronic_condition
+                                ?.split(",")
+                                ?.map { it.trim() } ?: emptyList(),
+                            surgicalHistory = user?.surgical_history ?: "",
+                            currentMedications = user?.current_medications
+                                ?.split(",")
+                                ?.map { it.trim() } ?: emptyList(),
+                            currentSupplements = user?.current_supplements
+                                ?.split(",")
+                                ?.map { it.trim() } ?: emptyList()
+                        )
+
+                    }
+
+                    is NetworkResult.Error -> {
+                        LoaderManager.hide()
+                        onError(result.message ?: "Something went wrong")
+                    }
+
+                    else -> {}
+                }
+            }
+        }
+    }
+
+    fun getProfileDocuments(onError: (String) ->Unit){
+        viewModelScope.launch {
+            LoaderManager.show()
+            repository.getProfileDocuments().collectLatest { result ->
+                when (result) {
+                    is NetworkResult.Success -> {
+                        LoaderManager.hide()
+                        val baseUrl = AppConstant.IMAGE_BASE_URL
+                        val user = result.data
+
+
+                        profileFormState = profileFormState.copy(
+                            uploadedFiles = user?.map { Uri.parse("$baseUrl$it") } ?: emptyList()
+                        )
+
+                    }
+
+                    is NetworkResult.Error -> {
+                        LoaderManager.hide()
+                        onError(result.message ?: "Something went wrong")
+                    }
+
+                    else -> {}
+                }
+            }
+        }
+    }
+
+
+    fun completeProfileDocuments(context: Context,onSuccess: () -> Unit, onError: (String) ->Unit){
+        viewModelScope.launch {
+            LoaderManager.show()
+            val files = UriToRequestBody.uriListToMultipartList(context,profileFormState.uploadedFiles,"documents[]")
+            repository.completeProfileDocuments(files).collectLatest { result ->
+                when (result) {
+                    is NetworkResult.Success -> {
+                        LoaderManager.hide()
+                        Log.d("EditProfileVM", "Documents uploaded successfully")
+                    }
+
+                    is NetworkResult.Error -> {
+                        LoaderManager.hide()
+                        Log.e("EditProfileVM", "Error uploading documents: ${result.message}")
+                    }
+
+                    else -> {}
+                }
+            }
+        }
+    }
+
 
     fun updateField(update: ProfileData.() -> ProfileData) {
         profileFormState = profileFormState.update()
@@ -194,8 +269,40 @@ class EditProfileViewModel @Inject constructor(
         bloodGroup: String,
         allergies: List<String>,
         emergencyName: String,
-        emergencyPhone: String
+        emergencyPhone: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
     ) {
+        viewModelScope.launch {
+            LoaderManager.show()
+            repository.updateGeneralProfile(
+                bloodGroup = bloodGroup,
+                allergies = allergies.joinToString(","),
+                contactName = emergencyName,
+                contactNumber = emergencyPhone
+            ).collectLatest {
+                when(it){
+                    is NetworkResult.Success -> {
+                        LoaderManager.hide()
+                        val current = profileData.value.copy(
+                            bloodGroup = bloodGroup,
+                            allergies = allergies,
+                            emergencyContactName = emergencyName,
+                            emergencyContactPhone = emergencyPhone
+                        )
+                        profileData.value = current
+                        onSuccess()
+                    }
+                    is NetworkResult.Error -> {
+                        LoaderManager.hide()
+                        onError(it.message ?: "An error occurred")
+                    }
+                    else -> {
+
+                    }
+                }
+            }
+        }
         val current = profileData.value.copy(
             bloodGroup = bloodGroup,
             allergies = allergies,
@@ -209,27 +316,67 @@ class EditProfileViewModel @Inject constructor(
         chronicConditions: List<String>,
         surgicalHistory: String,
         currentMedications: List<String>,
-        currentSupplements: List<String>
+        currentSupplements: List<String>,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
     ) {
-        val current = profileData.value.copy(
-            chronicConditions = chronicConditions,
-            surgicalHistory = surgicalHistory,
-            currentMedications = currentMedications,
-            currentSupplements = currentSupplements
-        )
-        profileData.value = current
+
+        viewModelScope.launch {
+
+            LoaderManager.show()
+
+            repository.updateGeneralProfileHistory(
+                chronicConditions = chronicConditions.joinToString(","),
+                surgicalHistory = surgicalHistory,
+                currentMedication = currentMedications.joinToString(","),
+                currentSupplement = currentSupplements.joinToString(","),
+                ).collectLatest {
+                when(it){
+                    is NetworkResult.Success -> {
+                        LoaderManager.hide()
+                        val current = profileData.value.copy(
+                            chronicConditions = chronicConditions,
+                            surgicalHistory = surgicalHistory,
+                            currentMedications = currentMedications,
+                            currentSupplements = currentSupplements
+                        )
+                        profileData.value = current
+                        Log.e("EditProfileVM", "Medical history updated successfully")
+                        onSuccess()
+                    }
+                    is NetworkResult.Error -> {
+                        LoaderManager.hide()
+                        Log.e("EditProfileVM", "Error updating medical history: ${it.message}")
+                        onError(it.message ?: "An error occurred")
+                    }
+                    else -> {
+                    }
+                }
+            }
+        }
+
+
+
+
     }
+
 
     fun addUploadedFile(uri: Uri) {
-        val currentFiles = profileData.value.uploadedFiles.toMutableList()
-        currentFiles.add(uri)
-        profileData.value = profileData.value.copy(uploadedFiles = currentFiles)
+         val updatedFiles = profileFormState.uploadedFiles.toMutableList()
+         updatedFiles.add(uri)
+         profileFormState = profileFormState.copy(
+                uploadedFiles = updatedFiles
+            )
     }
 
+
     fun removeUploadedFile(uri: Uri) {
-        val currentFiles = profileData.value.uploadedFiles.toMutableList()
-        currentFiles.remove(uri)
-        profileData.value = profileData.value.copy(uploadedFiles = currentFiles)
+        val updatedFiles = profileFormState.uploadedFiles.toMutableList()
+        updatedFiles.remove(uri)
+
+        profileFormState = profileFormState.copy(
+            uploadedFiles = updatedFiles
+        )
     }
 
     fun clearUploadedFiles() {
