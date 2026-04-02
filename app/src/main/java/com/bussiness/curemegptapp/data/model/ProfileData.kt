@@ -22,5 +22,10 @@ data class ProfileData(
     var currentSupplements: List<String> = emptyList(),
     var uploadedFiles: List<Uri> = emptyList(),
     var uploadedDocument :List<String> = emptyList(),
-    var profileImage :String=""
+    var profileImage :String="",
+    var relation :String ="father",
+    var phoneCopy :String ="",
+    var emailCopy:String ="",
+    var phoneVerify: Boolean =false,
+    var emailVerify: Boolean =false
 )

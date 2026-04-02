@@ -34,6 +34,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,6 +55,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.bussiness.curemegptapp.R
@@ -67,74 +70,113 @@ import com.bussiness.curemegptapp.ui.component.UniversalInputField
 import com.bussiness.curemegptapp.ui.component.input.CustomPowerSpinner
 import com.bussiness.curemegptapp.ui.dialog.CalendarDialog
 import com.bussiness.curemegptapp.ui.dialog.SuccessfulDialog
+import com.bussiness.curemegptapp.util.AppConstant
+import com.bussiness.curemegptapp.util.UriToRequestBody
+import com.bussiness.curemegptapp.viewmodel.medication.EditMedicationViewModel
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.text.SimpleDateFormat
 import java.util.Locale
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun EditMedicationScreen(
-    navController: NavHostController
+    navController: NavHostController,
+    medicationId :Int,
+    viewModel : EditMedicationViewModel = hiltViewModel()
 ) {
-    // DUMMY DATA INITIALIZED WITH REALISTIC VALUES
+
+    val context = LocalContext.current
+
+    val uiState by viewModel.uiState.collectAsState()
+    uiState.error?.let {
+        Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+    }
+
+    LaunchedEffect(medicationId) {
+        viewModel.getMedicationDetail(medicationId)
+        viewModel.getFamilyMembers()
+    }
+
     var dateOfBirth by remember { mutableStateOf("") }
-    var startDate by remember { mutableStateOf("04-15-2024") } // DUMMY: Two weeks ago
-    var endDate by remember { mutableStateOf("05-15-2024") } // DUMMY: One month course
+
+
     var currentReminder by remember { mutableStateOf("") }
-    var medicationName by remember { mutableStateOf("Amoxicillin") } // DUMMY: Common antibiotic
-    var dosage by remember { mutableStateOf("500mg") } // DUMMY: Standard dosage
-    var selectedMyself by remember { mutableStateOf("Myself") } // DUMMY: For myself
-    var selectFrequency by remember { mutableStateOf("Daily") } // DUMMY: Daily medication
-    var selectDayName by remember { mutableStateOf("Monday") } // DUMMY: Starting day
-    val myselfOptions = listOf("Myself", "Jane Smith", "Alice Johnson", "Bob Williams")
+
+    var medicationName by remember { mutableStateOf("") }
+    var dosage by remember { mutableStateOf("") }
+    var startDate by remember { mutableStateOf("") }
+    var endDate by remember { mutableStateOf("") }
+    var selectedMyself by remember { mutableStateOf("") }
+    var selectedMedicationType by remember { mutableStateOf("") }
+    var selectFrequency by remember { mutableStateOf("") }
+    var selectDayName by remember { mutableStateOf("") }
+    var newPhotoUploaded by remember { mutableStateOf(false)}
+    var description by remember { mutableStateOf("") }
+
+    var currentReminderTime by remember { mutableStateOf(listOf("")) }
+
+    val myselfOptions by viewModel.memberOption.collectAsState()
     val selectedMedicationTypeOptions = listOf("Medicine", "Supplements")
     val selectDayNameOptions = listOf(
         "Sunday", "Monday", "Tuesday", "Wednesday",
         "Thursday", "Friday", "Saturday"
     )
-    val selectFrequencyOptions = listOf("Daily", "Alternate Days", "Weekly")
-    var selectedMedicationType by remember { mutableStateOf("Medicine") } // DUMMY: Prescription medicine
-    var description by remember { mutableStateOf("Take one tablet after breakfast. Avoid dairy products 2 hours before or after. May cause mild stomach upset.") } // DUMMY: Real instructions
+    val selectFrequencyOptions = listOf("Daily", "Alternate", "Weekly")
+
     var showDialog by remember { mutableStateOf(false) }
     var showDialog1 by remember { mutableStateOf(false) }
     var showDialogSuccessFully by remember { mutableStateOf(false) }
-    val appointmentOptions = listOf(
-        "Normal Check-up", "Dental Check-up", "Root Canal", "Brain Check-up",
-        "Hair Check-up", "Skin Check-up", "Heart Check-up", "Lungs Check-up",
-        "Liver Check-up", "Intestine Check-up", "Kidney Check-up", "Bones Check-up",
-        "Feet Check-up", "Hand Check-up", "ENT Check-up"
-    )
-
-    // DUMMY: Two reminder times - morning and evening
-    var currentReminderTime by remember {
-        mutableStateOf(listOf("08:00:00", "20:00:00"))
-    }
-
     var uploadedFiles by remember { mutableStateOf<Uri?>(null) }
-    var checked by remember { mutableStateOf(true) } // DUMMY: Reminders enabled by default
+    var checked by remember { mutableStateOf(true) }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri != null) {
+            newPhotoUploaded = true
             uploadedFiles = uri
         }
     }
 
-    // HH:MM:SS format function
+
+    LaunchedEffect(uiState.medication) {
+
+        uiState.medication?.let { medication ->
+            medicationName = medication.medication_name ?: ""
+            dosage = medication.dosage ?: ""
+            startDate = medication.start_date ?: ""
+            endDate = medication.end_date ?: ""
+            selectedMedicationType = medication.medication_type ?: ""
+            selectedMyself = medication.medication_for_whom ?: ""
+            selectFrequency = medication.frequency ?: ""
+            selectDayName = medication.days ?: ""
+            description = medication.notes ?: ""
+            val uri: Uri = Uri.parse(  AppConstant.IMAGE_BASE_URL+medication.prescription_docs)
+            uploadedFiles = uri
+            currentReminderTime =
+                if (medication.reminder_time.isNullOrEmpty()) listOf("")
+                else medication.reminder_time
+        }
+
+    }
+
+
+
+
     fun formatTimeInput(input: String): String {
-        // Remove all non-digits
+        
         val digits = input.filter { it.isDigit() }
-
-        // Limit to 6 digits (HHMMSS)
+        
         val limitedDigits = digits.take(6)
-
+        
         return when (limitedDigits.length) {
             0 -> ""
-            1 -> "0$limitedDigits:"  // H -> 0H:
-            2 -> "$limitedDigits:"    // HH -> HH:
-            3 -> "${limitedDigits.substring(0, 2)}:${limitedDigits[2]}"  // HH:M -> HH:M
-            4 -> "${limitedDigits.substring(0, 2)}:${limitedDigits.substring(2, 4)}:"  // HH:MM -> HH:MM:
-            5 -> "${limitedDigits.substring(0, 2)}:${limitedDigits.substring(2, 4)}:${limitedDigits[4]}"  // HH:MM:S -> HH:MM:S
+            1 -> "0$limitedDigits:"
+            2 -> "$limitedDigits:"
+            3 -> "${limitedDigits.substring(0, 2)}:${limitedDigits[2]}"
+            4 -> "${limitedDigits.substring(0, 2)}:${limitedDigits.substring(2, 4)}:"
+            5 -> "${limitedDigits.substring(0, 2)}:${limitedDigits.substring(2, 4)}:${limitedDigits[4]}"
             6 -> {
                 // Format as HH:MM:SS
                 "${limitedDigits.substring(0, 2)}:${limitedDigits.substring(2, 4)}:${limitedDigits.substring(4, 6)}"
@@ -146,19 +188,13 @@ fun EditMedicationScreen(
     fun getFileName(uri: Uri): String {
         return uri.lastPathSegment ?: "file"
     }
-    val context = LocalContext.current
+
     fun validateFields(): Boolean {
         // Debug: Print current reminder times
         println("DEBUG: Current reminder times: $currentReminderTime")
         println("DEBUG: Valid reminder times: ${currentReminderTime.filter { it.trim().isNotBlank() }}")
 
-        // Validate Member Selection
-        if (selectedMyself == "Myself" || selectedMyself.isBlank()) {
-            // "Myself" is the default and valid option
-        } else if (!myselfOptions.contains(selectedMyself)) {
-            Toast.makeText(context, "Please select a valid member", Toast.LENGTH_SHORT).show()
-            return false
-        }
+
 
         // Validate Medication Type Selection
         if (selectedMedicationType == "Select Appointment Type" || selectedMedicationType.isBlank()) {
@@ -293,26 +329,7 @@ fun EditMedicationScreen(
             }
         }
 
-        // Validate File Upload (Optional)
-      /*  if (uploadedFiles != null) {
-            val fileName = uploadedFiles?.lastPathSegment ?: ""
-            val allowedExtensions = listOf(".pdf", ".jpg", ".jpeg", ".png", ".dcm", ".dicom")
-            val extension = fileName.substringAfterLast(".", "").lowercase()
 
-            if (extension !in allowedExtensions &&
-                !fileName.endsWith(".pdf", ignoreCase = true) &&
-                !fileName.endsWith(".jpg", ignoreCase = true) &&
-                !fileName.endsWith(".jpeg", ignoreCase = true) &&
-                !fileName.endsWith(".png", ignoreCase = true) &&
-                !fileName.endsWith(".dcm", ignoreCase = true) &&
-                !fileName.endsWith(".dicom", ignoreCase = true)) {
-
-                Toast.makeText(context, "Please upload only PDF, JPG, PNG, or DICOM files", Toast.LENGTH_SHORT).show()
-                return false
-            }
-        }
-*/
-        // Validate that reminder checkbox is checked if reminder times are set
         if (validReminderTimes.isNotEmpty() && !checked) {
             Toast.makeText(context, "Please enable reminders for the set times", Toast.LENGTH_SHORT).show()
             return false
@@ -353,6 +370,7 @@ fun EditMedicationScreen(
             CustomPowerSpinner(
                 selectedText = selectedMyself,
                 onSelectionChanged = { reason ->
+                    viewModel.updateForWhomId(reason)
                     selectedMyself = reason
                 },
                 horizontalPadding = 24.dp,
@@ -465,7 +483,7 @@ fun EditMedicationScreen(
 
                             val old = reminderValue
 
-                            // 🧨 Agar user ne backspace dabaya (koi bhi delete)
+
                             if (raw.length < old.length) {
                                 val list = currentReminderTime.toMutableList()
                                 list[index] = ""          // ⬅ full clear
@@ -525,171 +543,6 @@ fun EditMedicationScreen(
                             unfocusedIndicatorColor = Color.Transparent
                         )
                     )
-
-                    /*OutlinedTextField(
-                        value = reminderValue,
-                        onValueChange = { newValue ->
-                            if (index == 0) {
-                                // पहले यह check करें कि क्या newValue, reminderValue का prefix है
-                                // (यानी deletion end से हुई है)
-                                val isDeletingFromEnd = reminderValue.startsWith(newValue) && newValue.length < reminderValue.length
-
-                                if (isDeletingFromEnd) {
-                                    // End से delete करना allow करें
-                                    val formattedValue = formatTimeInput(newValue)
-                                    val updated = currentReminderTime.toMutableList()
-                                    updated[index] = formattedValue
-                                    currentReminderTime = updated
-                                } else if (newValue.length > reminderValue.length) {
-                                    // नया text add हो रहा है
-                                    val formattedValue = formatTimeInput(newValue)
-                                    val updated = currentReminderTime.toMutableList()
-                                    updated[index] = formattedValue
-                                    currentReminderTime = updated
-                                } else if (newValue.length == reminderValue.length) {
-                                    // Text replace हो रहा है (जैसे कि middle में type करना)
-                                    // इसे भी allow करें लेकिन cursor को end में रखें
-                                    val formattedValue = formatTimeInput(newValue)
-                                    val updated = currentReminderTime.toMutableList()
-                                    updated[index] = formattedValue
-                                    currentReminderTime = updated
-                                }
-                                // अगर middle से delete करने की कोशिश की (और end से नहीं), तो ignore करें
-                            }
-                        },
-                        textStyle = TextStyle(
-                            color = Color.Black,
-                            fontSize = 15.sp,
-                            fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-                            fontWeight = FontWeight.Normal
-                        ),
-                        placeholder = {
-                            Text("00:00:00", color = Color(0xFF697383))
-                        },
-                        trailingIcon = {
-                            Image(
-                                painter = painterResource(id = R.drawable.ic_appointed_gray_icon),
-                                contentDescription = "clock",
-                                modifier = Modifier.size(20.dp)
-                            )
-                        },
-                        enabled = index == 0,
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(30.dp))
-                            .border(1.dp, Color(0xFF697383), RoundedCornerShape(30.dp)),
-                        colors = TextFieldDefaults.colors(
-                            unfocusedContainerColor = Color.White,
-                            focusedContainerColor = Color.White,
-                            disabledContainerColor = Color.White,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            disabledIndicatorColor = Color.Transparent
-                        ),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number
-                        )
-                    )*/
-                   /* OutlinedTextField(
-                        value = reminderValue,
-                        onValueChange = { newValue ->
-                            if (index == 0) {
-                                // अगर deletion हो रही है (नया text छोटा है)
-                                if (newValue.length < reminderValue.length) {
-                                    // हमेशा अंत से ही delete करने दें
-                                    // अगर user ने middle से delete करने की कोशिश की, तो ignore करें
-                                    // और केवल अंत के character को ही remove करें
-                                    val shouldDeleteFromEnd = reminderValue.dropLast(1)
-                                    val formattedValue = formatTimeInput(shouldDeleteFromEnd)
-                                    val updated = currentReminderTime.toMutableList()
-                                    updated[index] = formattedValue
-                                    currentReminderTime = updated
-                                } else {
-                                    // Normal case - insertion या कोई change नहीं
-                                    val formattedValue = formatTimeInput(newValue)
-                                    val updated = currentReminderTime.toMutableList()
-                                    updated[index] = formattedValue
-                                    currentReminderTime = updated
-                                }
-                            }
-                        },
-                        textStyle = TextStyle(
-                            color = Color.Black,
-                            fontSize = 15.sp,
-                            fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-                            fontWeight = FontWeight.Normal
-                        ),
-                        placeholder = {
-                            Text("00:00:00", color = Color(0xFF697383))
-                        },
-                        trailingIcon = {
-                            Image(
-                                painter = painterResource(id = R.drawable.ic_appointed_gray_icon),
-                                contentDescription = "clock",
-                                modifier = Modifier.size(20.dp)
-                            )
-                        },
-                        enabled = index == 0,
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(30.dp))
-                            .border(1.dp, Color(0xFF697383), RoundedCornerShape(30.dp)),
-                        colors = TextFieldDefaults.colors(
-                            unfocusedContainerColor = Color.White,
-                            focusedContainerColor = Color.White,
-                            disabledContainerColor = Color.White,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            disabledIndicatorColor = Color.Transparent
-                        ),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number
-                        )
-                    )*/
-                    /*OutlinedTextField(
-                        value = reminderValue,
-                        onValueChange = { newValue ->
-                            if (index == 0) {
-                                val formattedValue = formatTimeInput(newValue)
-                                val updated = currentReminderTime.toMutableList()
-                                updated[index] = formattedValue
-                                currentReminderTime = updated
-                            }
-                        },
-                        textStyle = TextStyle(
-                            color = Color.Black,
-                            fontSize = 15.sp,
-                            fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-                            fontWeight = FontWeight.Normal
-                        ),
-                        placeholder = {
-                           // Text(stringResource(R.string.time_format_placeholder))
-                            Text("00:00:00", color = Color(0xFF697383))
-                        },
-                        trailingIcon = {
-                            Image(
-                                painter = painterResource(id = R.drawable.ic_appointed_gray_icon),
-                                contentDescription = "clock",
-                                modifier = Modifier.size(20.dp)
-                            )
-                        },
-                        enabled = index == 0,
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(30.dp))
-                            .border(1.dp, Color(0xFF697383), RoundedCornerShape(30.dp)),
-                        colors = TextFieldDefaults.colors(
-                            unfocusedContainerColor = Color.White,
-                            focusedContainerColor = Color.White,
-                            disabledContainerColor = Color.White,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            disabledIndicatorColor = Color.Transparent
-                        ),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number
-                        )
-                    )*/
 
                     if (index == 0) {
                         Image(
@@ -836,7 +689,38 @@ fun EditMedicationScreen(
                 ContinueButton(text = stringResource(R.string.update_medication_button)) {
                     // In real app, this would save to database
                     if (validateFields()) {
-                        showDialogSuccessFully = true
+                        val validReminderTimes = currentReminderTime.filter { it.trim().isNotBlank() }
+
+                        val reminderParts = validReminderTimes.map {
+                            MultipartBody.Part.createFormData("reminder_time[]", it)
+                        }
+                        var prescriptionPart: MultipartBody.Part? = null
+
+                        if(newPhotoUploaded) {
+                           prescriptionPart  = uploadedFiles?.let { uri ->
+                                UriToRequestBody.uriToMultipart(context, uri, "prescription_docs")
+                            }
+                        }
+
+                        viewModel.updateMedication(
+                            medicationId = medicationId.toString().toRequestBody(),
+                            forWhomId = viewModel.selectedId?.toRequestBody(),
+                            medicationType = selectedMedicationType.toRequestBody(),
+                            medicationName = medicationName.toRequestBody(),
+                            dosage = dosage.toRequestBody(),
+                            frequency = selectFrequency.toRequestBody(),
+                            days = if (selectFrequency == "Weekly") selectDayName.toRequestBody() else null,
+                            startDate = startDate.toRequestBody(),
+                            endDate = endDate.toRequestBody(),
+                            notes = description.toRequestBody(),
+                            reminderStatus = if (checked) "1".toRequestBody() else "0".toRequestBody(),
+                            reminderTimes = reminderParts,
+                            prescriptionDocs = prescriptionPart,{
+                                showDialogSuccessFully = true
+                            },{
+                                msg -> Toast.makeText(context,msg,Toast.LENGTH_LONG).show()
+                            }
+                        )
                     }
                 }
             }
@@ -888,5 +772,5 @@ fun EditMedicationScreen(
 @Composable
 fun EditMedicationScreenPreview() {
     val navController = rememberNavController()
-    EditMedicationScreen(navController = navController)
+    EditMedicationScreen(navController = navController,0)
 }

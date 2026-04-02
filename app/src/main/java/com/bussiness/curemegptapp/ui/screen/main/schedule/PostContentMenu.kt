@@ -39,6 +39,8 @@ fun PostContentMenu(
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
+    var lastClickTime by remember { mutableStateOf(0L) }
+    var lastClickTimeDelete by remember { mutableStateOf(0L) }
     var expanded by remember { mutableStateOf(false) }
     // 🔥 Rotation animation
     val rotation by animateFloatAsState(
@@ -89,6 +91,7 @@ fun PostContentMenu(
                 }
             )
             DropdownMenuItem(
+                enabled = !checked,
                 modifier = Modifier.clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
@@ -100,7 +103,7 @@ fun PostContentMenu(
                     Text(
                         text = "Reschedule",
                         fontFamily = FontFamily(Font(R.font.urbanist_medium)),
-                        color = Color(0xFF374151),
+                        color = if (checked) Color(0x80374151) else Color(0xFF374151), // faded
                         fontSize = 16.sp
                     )
                 },
@@ -113,11 +116,16 @@ fun PostContentMenu(
                     )
                 },
                 onClick = {
-                    expanded = false
-                    onEditClick()
-
+                    val currentTime = System.currentTimeMillis()
+                    if (currentTime - lastClickTime > 1000) { // 1 second gap
+                        lastClickTime = currentTime
+                        expanded = false
+                        onEditClick()
+                    }
                 }
             )
+
+
             DropdownMenuItem(
                 text = {
                     Text(
@@ -136,8 +144,14 @@ fun PostContentMenu(
                     )
                 },
                 onClick = {
-                    expanded = false
-                    onDeleteClick()
+                    val currentTime = System.currentTimeMillis()
+
+                    if (currentTime - lastClickTimeDelete > 1000) { // 1 second gap
+                        lastClickTimeDelete = currentTime
+                        expanded = false
+                        onDeleteClick()
+                    }
+
                 }
             )
         }

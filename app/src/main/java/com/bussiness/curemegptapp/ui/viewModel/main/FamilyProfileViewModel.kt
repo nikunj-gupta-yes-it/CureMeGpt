@@ -3,10 +3,14 @@ package com.bussiness.curemegptapp.ui.viewModel.main
 // FamilyProfileViewModel.kt
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.bussiness.curemegptapp.repository.NetworkResult
+import com.bussiness.curemegptapp.repository.Repository
+import com.bussiness.curemegptapp.util.LoaderManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -41,7 +45,9 @@ data class Document(
 )
 
 @HiltViewModel
-class FamilyProfileViewModel @Inject constructor() : ViewModel() {
+class FamilyProfileViewModel @Inject constructor(
+    val repository: Repository
+) : ViewModel() {
 
     private val _familyMember = MutableStateFlow<FamilyMember?>(null)
     val familyMember: StateFlow<FamilyMember?> = _familyMember.asStateFlow()
@@ -52,38 +58,20 @@ class FamilyProfileViewModel @Inject constructor() : ViewModel() {
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
-    // Initialize with sample data or fetch from repository
-    init {
-        loadFamilyMember()
-    }
 
-    fun loadFamilyMember(memberId: String = "1") {
+
+    fun loadFamilyMember(memberId: Int = 1) {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
-
-            try {
-                // यहाँ आप API call या database से data fetch कर सकते हैं
-                val member = getSampleFamilyMember()
-                _familyMember.value = member
-            } catch (e: Exception) {
-                _errorMessage.value = "Failed to load data: ${e.message}"
-            } finally {
-                _isLoading.value = false
-            }
+            getSampleFamilyMember(memberId)
         }
     }
 
-    fun updateFamilyMember(updatedMember: FamilyMember) {
-        viewModelScope.launch {
-            _familyMember.value = updatedMember
-            // यहाँ आप data को repository में save कर सकते हैं
-        }
-    }
+
 
     fun deleteFamilyMember() {
         viewModelScope.launch {
-            // Delete logic here
             _familyMember.value = null
         }
     }
@@ -106,34 +94,47 @@ class FamilyProfileViewModel @Inject constructor() : ViewModel() {
         }
     }
 
-    private fun getSampleFamilyMember(): FamilyMember {
-        return FamilyMember(
-            id = "1",
-            name = "Rose Logan",
-            profileImage = "profile_image_url",
-            contactNumber = "+1 555 987 654",
-            email = "rosy@gmail.com",
-            relation = "Spouse",
-            dateOfBirth = "05/08/1995",
-            gender = "Female",
-            height = "150 Cm",
-            weight = "55 Kg",
-            bloodGroup = "O+",
-            allergies = "Nuts",
-            emergencyContact = "--",
-            emergencyPhone = "--",
-            chronicConditions = "Hypertension",
-            surgicalHistory = "--",
-            currentMedications = listOf("--", "--", "--", "--"),
-            currentSupplements = listOf("--", "--", "--"),
-            documents = listOf(
-                Document(
-                    id = "doc1",
-                    fileName = "Demo_1.Pdf",
-                    fileUrl = "",
-                    fileType = "pdf"
-                )
-            )
-        )
+    private fun getSampleFamilyMember(id:Int) {
+
+        viewModelScope.launch {
+            LoaderManager.show()
+            repository.getFamilyMemberProfileDetails(id).collectLatest {
+                when(it){
+                    is NetworkResult.Success ->{
+                        LoaderManager.hide()
+                        val data = it.data
+                        _familyMember.value = data
+                    }
+                    is NetworkResult.Error ->{
+                        LoaderManager.hide()
+                    }
+                    else ->{
+                    }
+                }
+            }
+        }
     }
+
+    fun deleteProfile(id:Int,onSucess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            LoaderManager.show()
+            repository.deleteFamilyMember(id).collectLatest {
+                when(it){
+                    is NetworkResult.Success ->{
+                        LoaderManager.hide()
+                        onSucess()
+                    }
+                    is NetworkResult.Error ->{
+                        LoaderManager.hide()
+                        onError(it.message ?: "Unknown error")
+                    }
+                    else ->{
+                    }
+                }
+            }
+        }
+
+    }
+
+
 }

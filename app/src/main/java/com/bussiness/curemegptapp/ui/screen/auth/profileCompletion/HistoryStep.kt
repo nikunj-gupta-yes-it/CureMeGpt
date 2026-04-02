@@ -26,6 +26,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -159,7 +160,20 @@ fun HistoryStep(
             Spacer(modifier = Modifier.height(16.dp))
             // ⭐ Custom allergy field — only if Others selected
             if ("Others" in selectedConditions) {
+                var showValues = ""
+                selectedConditions.forEach { item ->
+                    if (!selectedConditions.contains(item)) {
+                        showValues += "$item, "
+                    }
+                }
 
+                if (showValues.isNotEmpty()) {
+                    showValues = showValues.substring(0, showValues.length - 2)
+                }
+
+                LaunchedEffect(Unit) {
+                    customCondition = showValues
+                }
                 ProfileInputWithoutLabelField(
                     placeholder = stringResource(R.string.write_condition_placeholder),//"Write Condition",
                     value = customCondition,

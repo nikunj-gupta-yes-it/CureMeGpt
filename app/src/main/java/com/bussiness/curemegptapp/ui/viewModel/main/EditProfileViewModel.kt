@@ -16,11 +16,14 @@ import com.bussiness.curemegptapp.repository.Repository
 import com.bussiness.curemegptapp.repository.Resource
 import com.bussiness.curemegptapp.util.AppConstant
 import com.bussiness.curemegptapp.util.LoaderManager
+import com.bussiness.curemegptapp.util.MultipartHelper
 import com.bussiness.curemegptapp.util.SessionManager
 import com.bussiness.curemegptapp.util.UriToRequestBody
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import okhttp3.Dispatcher
 import okhttp3.MultipartBody
 import javax.inject.Inject
 
@@ -30,11 +33,10 @@ class EditProfileViewModel @Inject constructor(
     private val sessionManager: SessionManager
 ) : ViewModel() {
 
-
+    var currentOtp = ""
     val currentStep = mutableStateOf(0)
-
     val uploadedFilesUrl = mutableListOf<String>()
-    // All profile data
+
     val profileData = mutableStateOf(ProfileData())
 
     var profileFormState by mutableStateOf(ProfileData())
@@ -59,6 +61,7 @@ class EditProfileViewModel @Inject constructor(
                         val image = user?.profile_photo
                             ?.takeIf { it.isNotBlank() }
                             ?.let { "$baseUrl$it" } ?: ""
+
                         profileFormState = profileFormState.copy(
                             id = user?.id ?: 0,
                             fullName = user?.name ?: "",
@@ -68,8 +71,21 @@ class EditProfileViewModel @Inject constructor(
                             gender = user?.gender ?: "",
                             height = user?.height ?: "",
                             weight = user?.weight ?: "",
-                            profileImage = image
+                            profileImage = image,
+                            emailVerify = if (!user?.email.isNullOrEmpty()) {
+                                    true
+                              } else {
+                                   false
+                             },
+                            phoneVerify = if (!user?.phone.isNullOrEmpty()) {
+                                    true
+                                } else {
+                                    false
+                                },
+                            emailCopy = user?.email ?: "",
+                            phoneCopy = user?.phone?:""
                         )
+
                         isLoading = false
                     }
 
@@ -83,6 +99,53 @@ class EditProfileViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+
+
+    fun verifyEmailPhoneRequest(onSuccess: (otpValue:String) -> Unit,onError: (String) -> Unit,
+                                emailOrPhone: String){
+        viewModelScope.launch {
+            LoaderManager.show()
+            repository.verifyEmailPhoneRequest(emailOrPhone).collect {
+                when(it){
+                    is NetworkResult.Success ->{
+                        LoaderManager.hide()
+                        currentOtp = it.data.toString()
+                        onSuccess(currentOtp)
+                    }
+                    is NetworkResult.Error ->{
+                        LoaderManager.hide()
+                        onError(it.message.toString())
+                    }
+                    else ->{
+
+                    }
+                }
+            }
+        }
+
+    }
+
+
+
+    fun onPhoneChange(value: String) {
+        //    _uiState.value = _uiState.value.copy(phone = value)
+        profileData.value.copy(phoneCopy = value)
+    }
+
+    fun onEmailVerified(){
+        profileData.value.copy(emailVerify = true)
+        profileData.value.copy(email = profileData.value.emailCopy)
+    }
+
+    fun onPhoneVerified(){
+        profileData.value = profileData.value.copy(phoneVerify = true)
+        profileData.value = profileData.value.copy(contactNumber = profileData.value.phoneCopy)
+    }
+
+    fun onEmailChange(value: String) {
+        profileData.value = profileData.value.copy(emailCopy = value)
     }
 
     fun getGeneralProfile(onError: (String) -> Unit){
@@ -160,9 +223,12 @@ class EditProfileViewModel @Inject constructor(
                         val baseUrl = AppConstant.IMAGE_BASE_URL
                         val user = result.data
 
-
                         profileFormState = profileFormState.copy(
-                            uploadedFiles = user?.map { Uri.parse("$baseUrl$it") } ?: emptyList()
+                            uploadedFiles = user?.map {
+                                Uri.parse("$baseUrl$it") } ?: emptyList()
+                        ,
+                            uploadedDocument = user?:emptyList()
+
                         )
 
                     }
@@ -178,12 +244,73 @@ class EditProfileViewModel @Inject constructor(
         }
     }
 
+    fun updateProfileDocuments(context: Context,onSuccess: () -> Unit, onError: (String) ->Unit){
+        viewModelScope.launch(Dispatchers.IO) {
+            LoaderManager.show()
+
+            val parts = mutableListOf<MultipartBody.Part>()
+            profileFormState.uploadedFiles.forEach { item ->
+                when (item.scheme) {
+                     "http", "https" -> {
+                        val part = MultipartHelper.preparePart(context,"documents[]",item)
+                        part?.let { parts.add(it) }
+                    }
+                    "content", "file" -> {
+                        val part = UriToRequestBody.uriToMultipart(context,item,"documents[]")
+                        part.let { parts.add(it) }
+                    }
+                    else -> {
+                        // Unknown or unsupported scheme
+                    }
+                }
+            }
+
+            if (parts.isEmpty()) {
+                Log.e("UPLOAD", "No valid parts created")
+                return@launch
+            }
+
+            repository.updateProfileDocuments(parts).collectLatest { result ->
+                when (result) {
+                    is NetworkResult.Success -> {
+                        LoaderManager.hide()
+                        Log.d("EditProfileVM", "Documents uploaded successfully")
+                        onSuccess()
+                    }
+                    is NetworkResult.Error -> {
+                        LoaderManager.hide()
+                        Log.e("EditProfileVM", "Error uploading documents: ${result.message}")
+                        onError("Error uploading documents: ${result.message}")
+                    }
+                    else -> {
+
+                    }
+                }
+            }
+        }
+    }
 
     fun completeProfileDocuments(context: Context,onSuccess: () -> Unit, onError: (String) ->Unit){
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             LoaderManager.show()
-            val files = UriToRequestBody.uriListToMultipartList(context,profileFormState.uploadedFiles,"documents[]")
-            repository.completeProfileDocuments(files).collectLatest { result ->
+            val parts = mutableListOf<MultipartBody.Part>()
+
+            profileFormState.uploadedFiles.forEach { item ->
+
+                val part = MultipartHelper.preparePart(
+                    context,
+                    "documents[]",   // 🔴 backend key
+                    item
+                )
+
+                part?.let { parts.add(it) }
+            }
+
+            if (parts.isEmpty()) {
+                Log.e("UPLOAD", "No valid parts created")
+                return@launch
+            }
+            repository.completeProfileDocuments(parts).collectLatest { result ->
                 when (result) {
                     is NetworkResult.Success -> {
                         LoaderManager.hide()
@@ -200,6 +327,8 @@ class EditProfileViewModel @Inject constructor(
             }
         }
     }
+
+
 
 
     fun updateField(update: ProfileData.() -> ProfileData) {

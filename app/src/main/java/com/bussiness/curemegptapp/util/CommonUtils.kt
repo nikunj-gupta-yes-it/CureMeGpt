@@ -31,6 +31,13 @@ object CommonUtils {
         }
     }
 
+    fun convertToAmPm(time24: String): String {
+        val inputFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+        val outputFormat = SimpleDateFormat("h:mm a", Locale.getDefault())
+
+        val date = inputFormat.parse(time24)
+        return outputFormat.format(date!!)
+    }
 
 
 

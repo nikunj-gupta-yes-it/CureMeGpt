@@ -6,6 +6,7 @@ import com.bussiness.curemegptapp.apimodel.OnBoardingModel.OnboardingResponse
 import com.bussiness.curemegptapp.apimodel.loginmodel.LoginResponse
 import com.bussiness.curemegptapp.apimodel.personalmodel.PersonalModel
 import com.bussiness.curemegptapp.apimodel.personalmodel.ProfileResponse
+import com.bussiness.curemegptapp.apimodel.profilemodel.DeleteMedicalDocRequest
 import com.bussiness.curemegptapp.apimodel.profilemodel.UserProfileResponse
 import com.google.gson.Gson
 import kotlinx.serialization.json.JsonObject
@@ -15,6 +16,7 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import retrofit2.Response
+import retrofit2.http.Body
 import retrofit2.http.Field
 import retrofit2.http.FormUrlEncoded
 import retrofit2.http.Multipart
@@ -180,7 +182,8 @@ interface ApiService {
         @Field("time") time :String,
         @Field("preferred_doctor") preferredDoctor:String,
         @Field("preferred_clinic") preferredClinic :String,
-        @Field("appointment_reminder") reminder :String
+        @Field("appointment_reminder") reminder :String,
+        @Field("recommended_chat_id") recommendedChatId :String?
     ) : Response<GsonJsonObject>
 
 
@@ -236,5 +239,207 @@ interface ApiService {
     suspend fun completeProfileDocuments(
         @Part files: List<MultipartBody.Part>
     ) : Response<GsonJsonObject>
+
+    @POST("update_profile_documents")
+    @Multipart
+    suspend fun updateProfileDocuments(
+        @Part files: List<MultipartBody.Part>
+    ) : Response<GsonJsonObject>
+
+    @POST("get_schedule_appointment_details")
+    @FormUrlEncoded
+    suspend fun getScheduleAppointmentDetails(
+        @Field("appointment_id") appointmentId :String
+    ) : Response<GsonJsonObject>
+
+
+    @POST("reschedule_appointment")
+    @FormUrlEncoded
+    suspend fun rescheduleAppointment(
+        @Field("appointment_id") appointmentId:Int,
+        @Field("date") date :String,
+        @Field("time") time :String,
+        @Field("appointment_reminder") reminder :String
+    ) : Response<GsonJsonObject>
+
+
+    @POST("appointment_mark_as_complete_incomplete")
+    @FormUrlEncoded
+    suspend fun markAppointmentComplete(
+        @Field("appointment_id") id:Int
+    ) : Response<GsonJsonObject>
+
+
+    @POST("delete_appointment")
+    @FormUrlEncoded
+    suspend fun deleteAppointment(
+        @Field("appointment_id") id:Int
+    ) : Response<GsonJsonObject>
+
+
+    @Multipart
+    @POST("add_medication")
+    suspend fun addMedication(
+        @Part("for_whom_id") forWhomId: RequestBody?,
+        @Part("medication_type") medicationType: RequestBody,
+        @Part("medication_name") medicationName: RequestBody,
+        @Part("dosage") dosage: RequestBody,
+        @Part("frequency") frequency: RequestBody,
+        @Part("days") days: RequestBody?,
+        @Part("start_date") startDate: RequestBody,
+        @Part("end_date") endDate: RequestBody,
+        @Part("notes") notes: RequestBody,
+        @Part("reminder_status") reminderStatus: RequestBody,
+        @Part reminderTimes: List<MultipartBody.Part>,
+        @Part prescriptionDocs: MultipartBody.Part?
+     ): Response<GsonJsonObject>
+
+    @POST("get_medication_list")
+    suspend fun getMedicationList() : Response<GsonJsonObject>
+
+    @POST("get_medication_details")
+    @FormUrlEncoded
+    suspend fun getMedicationDetails(
+        @Field("medication_id") medicationId :Int
+    ) : Response<GsonJsonObject>
+
+    @POST("delete_medication")
+    @FormUrlEncoded
+    suspend fun deleteMedication(
+        @Field("medication_id") medicationId :Int
+    ) : Response<GsonJsonObject>
+
+
+    @Multipart
+    @POST("update_medication")
+    suspend fun updateMedication(
+        @Part("medication_id") medicationId : RequestBody?,
+        @Part("for_whom_id") forWhomId: RequestBody?,
+        @Part("medication_type") medicationType: RequestBody,
+        @Part("medication_name") medicationName: RequestBody,
+        @Part("dosage") dosage: RequestBody,
+        @Part("frequency") frequency: RequestBody,
+        @Part("days") days: RequestBody?,
+        @Part("start_date") startDate: RequestBody,
+        @Part("end_date") endDate: RequestBody,
+        @Part("notes") notes: RequestBody,
+        @Part("reminder_status") reminderStatus: RequestBody,
+        @Part reminderTimes: List<MultipartBody.Part>,
+        @Part prescriptionDocs: MultipartBody.Part?
+    ) : Response<GsonJsonObject>
+
+    @POST("add_family_member_personal")
+    @Multipart
+    suspend fun addFamilyMemberPersonal(
+        @Part("relation") relation : RequestBody,
+        @Part("full_name") nameBody: RequestBody,
+        @Part("contact_number") phoneBody: RequestBody,
+        @Part("email_address") emailBody: RequestBody,
+        @Part("dob") dobBody: RequestBody,
+        @Part("gender") genderBody: RequestBody,
+        @Part("height") heightBody: RequestBody,
+        @Part("weight") weightBody: RequestBody,
+        @Part profile_image:  MultipartBody.Part?
+    ) : Response<GsonJsonObject>
+
+    @POST("add_family_member_general")
+    @FormUrlEncoded
+    suspend fun addFamilyMemberGeneral(
+        @Field("family_member_id") familyMemberId :Int,
+        @Field("blood_group") bloodGroup: String,
+        @Field("known_allergies[]") knownAllergies :String,
+        @Field("emergency_contact_name") contactName :String,
+        @Field("emergency_contact_number") contactNumber :String
+    ) : Response<GsonJsonObject>
+
+    @POST("add_family_member_history")
+    @FormUrlEncoded
+    suspend fun addFamilyMemberHistory(
+        @Field("family_member_id") familyMemeberId:Int,
+        @Field("chronic_conditions[]") chronicCondition : String,
+        @Field("surgical_history") surgicalHistory :String,
+        @Field("current_medication[]") currentMedication: String,
+        @Field("current_supplements[]") currentSupplements : String
+    ) : Response<GsonJsonObject>
+
+    @POST("add_family_member_medical_documents")
+    @Multipart
+    suspend fun addFamilyMemberMedicalDocuments(
+        @Part("family_member_id") familyMemeberId : RequestBody,
+        @Part  profile_image:  MutableList<MultipartBody.Part?>
+    ) : Response<GsonJsonObject>
+
+    @POST("get_family_member_profile")
+    @FormUrlEncoded
+    suspend fun getFamilyMemberProfile(
+        @Field("famil_member_id") id :Int
+    ) : Response<GsonJsonObject>
+
+    @POST("update_family_personal_profile")
+    @Multipart
+    suspend fun updateFamilyPersonalProfile(
+        @Part("family_member_id") familyMemberBody : RequestBody,
+        @Part("fullName") nameBody: RequestBody,
+        @Part("contactNumber") phoneBody: RequestBody,
+        @Part("emailAddress") emailBody: RequestBody,
+        @Part("dateOfBirth") dobBody: RequestBody,
+        @Part("gender") genderBody: RequestBody,
+        @Part("height") heightBody: RequestBody,
+        @Part("weight") weightBody: RequestBody,
+        @Part profile_image:  MultipartBody.Part?
+    ) : Response<GsonJsonObject>
+
+    @POST("update_family_general_profile")
+    @FormUrlEncoded
+    suspend fun updateFamilyGeneralProfile(
+        @Field("family_member_id") familyMemberId :Int,
+        @Field("bloodGroup") bloodGroup: String,
+        @Field("knownAllergies[]") knownAllergies :String,
+        @Field("emergencyContactName") contactName :String,
+        @Field("emergencyContactNumber") contactNumber :String
+    ) : Response<GsonJsonObject>
+    
+
+    @POST("update_family_history_profile")
+    @FormUrlEncoded
+    suspend fun updateFamilyHistoryProfile(
+        @Field("family_member_id") familyMemberId :Int,
+        @Field("chronicCondition[]") chronicCondition :String,
+        @Field("surgicalHistory") surgicalHistory :String,
+        @Field("currentMedications[]") currentMediation :String,
+        @Field("currentSupplements[]") supplement :String
+    ) : Response<GsonJsonObject>
+
+
+    @POST("delete_user_medical_documents")
+    suspend fun deleteUserMedicalDocuments(
+        @Body request : DeleteMedicalDocRequest
+    )
+
+    @POST("update_family_medical_documents")
+    @Multipart
+    suspend fun updateFamilyMedicalDocuments(
+        @Part("family_member_id") id : RequestBody,
+        @Part  profile_image:  MutableList<MultipartBody.Part?>
+    )  : Response<GsonJsonObject>
+
+    @POST("family_member_list")
+    suspend fun familyMemberList() : Response<GsonJsonObject>
+
+    @POST("get_family_member_profile")
+    @FormUrlEncoded
+    suspend fun getFamilyMemberProfileDetails(
+        @Field("famil_member_id") familyMemberId :Int
+    ) : Response<GsonJsonObject>
+
+    @POST("delete_family_member")
+    @FormUrlEncoded
+    suspend fun deleteFamilyMember(
+        @Field("family_member_id")familyMemberId :Int
+    ) : Response<GsonJsonObject>
+
+    @POST("user_with_family_details")
+    suspend fun getUserWithFamilyDetails() : Response<GsonJsonObject>
+
 
 }

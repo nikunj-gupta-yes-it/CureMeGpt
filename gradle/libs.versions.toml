@@ -23,6 +23,8 @@ firebaseMessagingKtxVersion = "25.0.1"
 firebaseBom = "33.1.0"
 firebaseCrashlyticsVersion = "19.0.0"
 firebaseAnalyticsVersion = "22.0.0"
+runtimeVersion = "1.10.5"
+runtime = "1.10.6"
 
 [libraries]
 accompanist-permissions-v0360 = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissionsVersion" }
@@ -55,6 +57,8 @@ firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "fir
 firebase-messaging-ktx = { group = "com.google.firebase", name = "firebase-messaging-ktx", version.ref = "firebaseMessagingKtxVersion" }
 firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics", version.ref = "firebaseCrashlyticsVersion" }
 firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics", version.ref = "firebaseAnalyticsVersion" }
+androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtimeVersion" }
+androidx-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtime" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

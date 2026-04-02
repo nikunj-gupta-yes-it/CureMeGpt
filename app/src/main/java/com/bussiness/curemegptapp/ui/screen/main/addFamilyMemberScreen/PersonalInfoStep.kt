@@ -1,6 +1,8 @@
 package com.bussiness.curemegptapp.ui.screen.main.addFamilyMemberScreen
 
+import android.net.Uri
 import android.os.Build
+import android.util.Log
 import android.util.Patterns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -16,6 +18,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,6 +33,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bussiness.curemegptapp.R
 import com.bussiness.curemegptapp.data.model.ProfileData
 import com.bussiness.curemegptapp.ui.component.Dropdown1
@@ -44,52 +49,102 @@ import com.bussiness.curemegptapp.ui.viewModel.main.AddFamilyMemberViewModel
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PersonalInfoStep(
+    id:Int =0,
     viewModel: AddFamilyMemberViewModel,
     profileData: ProfileData,
     onNext: () -> Unit
 ) {
-    var fullName by remember { mutableStateOf(profileData.fullName) }
-    var contactNumber by remember { mutableStateOf(profileData.contactNumber) }
-    var email by remember { mutableStateOf(profileData.email) }
-    var dateOfBirth by remember { mutableStateOf(profileData.dateOfBirth) }
-    var gender by remember { mutableStateOf(profileData.gender) }
-    var showDialog by remember { mutableStateOf(false) }
+
+    val profileData1 by viewModel.profileData.collectAsStateWithLifecycle()
+
+    LaunchedEffect(id) {
+        Log.d("TEST_ID","Id inside the PersonalInfo is"+id)
+        if (id > 0) {
+            viewModel.getFamilyMemberProfileData(id)
+        }
+    }
     val context = LocalContext.current
+
+    var fullName by remember { mutableStateOf("") }
+    var contactNumber by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var dateOfBirth by remember { mutableStateOf("") }
+    var gender by remember { mutableStateOf("Select") }
+    var relation by remember { mutableStateOf("father") }
+    var update by remember { mutableStateOf(false) }
+    var heightValue by remember { mutableStateOf("") }
+    var heightUnit by remember { mutableStateOf("Cm") }
+
+    var weightValue by remember { mutableStateOf("") }
+    var weightUnit by remember { mutableStateOf("Kg") }
+
+    var selectedProfilePhotoUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedProfilePhotoName by remember { mutableStateOf("No file chosen") }
+
+    var showEmailOTPDialog by remember { mutableStateOf(false) }
+    var showPhoneOTPDialog by remember { mutableStateOf(false) }
+
+
+    var showDialog by remember { mutableStateOf(false) }
+
+
+
+    LaunchedEffect(profileData1) {
+
+        Log.d("TESTING_FAMILY","PROFILE CHANGED: ${profileData1.fullName}")
+
+        if (profileData1.fullName.isNotEmpty()) {
+            Log.d("TESTING_FAMILY","HERE INSIDE THE PROFILE DATA"+profileData1.fullName)
+            update = true
+            fullName = profileData1.fullName
+            contactNumber = profileData1.contactNumber
+            email = profileData1.email
+            dateOfBirth = profileData1.dateOfBirth
+            gender = profileData1.gender
+
+            // FIX: Also sync the relation from the API
+            relation = profileData1.relation ?: "father"
+
+            val heightParts = profileData1.height.split(" ")
+            heightValue = heightParts.getOrNull(0) ?: ""
+            heightUnit = heightParts.getOrNull(1) ?: "Cm"
+
+            val weightParts = profileData1.weight.split(" ")
+            weightValue = weightParts.getOrNull(0) ?: ""
+            weightUnit = weightParts.getOrNull(1) ?: "Kg"
+
+            selectedProfilePhotoName = if (profileData1.profileImage.isNotEmpty())
+                profileData1.profileImage.substringAfterLast("/")
+            else
+                "No file chosen"
+        }
+    }
+
+
     val genderOptions = listOf(
         stringResource(R.string.gender_male),
         stringResource(R.string.gender_female),
         stringResource(R.string.gender_other)
     )
 
+    val familyRelations = listOf(
+        "father","mother","grandfather","grandmother","great-grandfather",
+        "great-grandmother","brother","sister","son","daughter",
+        "grandson","granddaughter","husband","wife","uncle","aunt",
+        "nephew","niece","cousin","father-in-law","mother-in-law",
+        "brother-in-law","sister-in-law","son-in-law","daughter-in-law"
+    )
+
     if (showDialog) {
         CalendarDialog(
-            onDismiss = { showDialog = false },
+            onDismiss = {
+                showDialog = false
+                        },
             onDateApplied = {
-                // SELECTED DATE HERE
                 showDialog = false
                 dateOfBirth = it.toString()
             }
         )
-    }
-
-    // Height and weight with units
-    var heightValue by remember {
-        mutableStateOf(profileData.height.split(" ").getOrNull(0) ?: "")
-    }
-    var heightUnit by remember {
-        mutableStateOf(profileData.height.split(" ").getOrNull(1) ?: "Cm")
-    }
-
-    var weightValue by remember {
-        mutableStateOf(profileData.weight.split(" ").getOrNull(0) ?: "")
-    }
-    var weightUnit by remember {
-        mutableStateOf(profileData.weight.split(" ").getOrNull(1) ?: "Kg")
-    }
-
-    var selectedProfilePhotoUri by remember { mutableStateOf(profileData.profilePhotoUri) }
-    var selectedProfilePhotoName by remember {
-        mutableStateOf(profileData.profilePhotoUri?.lastPathSegment ?: "No file chosen")
     }
 
     val profilePhotoPickerLauncher =
@@ -98,11 +153,12 @@ fun PersonalInfoStep(
                 selectedProfilePhotoUri = it
                 selectedProfilePhotoName = it.lastPathSegment ?: "selected_file"
             }
-        }
+    }
 
     fun openProfilePhotoPicker() {
         profilePhotoPickerLauncher.launch(arrayOf("image/*"))
     }
+
     fun validateFields(): Boolean {
         if (fullName.isBlank()) {
             Toast.makeText(context, "Full name is required", Toast.LENGTH_SHORT).show()
@@ -113,30 +169,33 @@ fun PersonalInfoStep(
             Toast.makeText(context, "Name must be at least 2 characters", Toast.LENGTH_SHORT).show()
             return false
         }
-
-        if (contactNumber.isBlank()) {
-            Toast.makeText(context, "Contact number is required", Toast.LENGTH_SHORT).show()
+        if(relation.isEmpty()){
+            Toast.makeText(context, "Please Select Relation", Toast.LENGTH_SHORT).show()
             return false
         }
 
         val phonePattern = Regex("^[0-9]+\$")
-        if (!phonePattern.matches(contactNumber)) {
+
+        if (contactNumber.isBlank() == false && !phonePattern.matches(contactNumber)) {
             Toast.makeText(context, "Phone number must contain only digits", Toast.LENGTH_SHORT).show()
             return false
         }
 
-        if (contactNumber.length < 10) {
+        if ( contactNumber.length >0 && contactNumber.length < 10) {
             Toast.makeText(context, "Phone number must be at least 10 digits", Toast.LENGTH_SHORT).show()
             return false
         }
 
-        if (email.isBlank()) {
-            Toast.makeText(context, "Email is required", Toast.LENGTH_SHORT).show()
-            return false
+        if(contactNumber.length > 10){
+                Toast.makeText(context, "Phone number must be greater than 10 digits", Toast.LENGTH_SHORT).show()
+                return false
         }
 
+
+
+
         val emailPattern = Patterns.EMAIL_ADDRESS
-        if (!emailPattern.matcher(email).matches()) {
+        if (email.isBlank() == false &&!emailPattern.matcher(email).matches()) {
             Toast.makeText(context, "Enter a valid email address", Toast.LENGTH_SHORT).show()
             return false
         }
@@ -248,6 +307,37 @@ fun PersonalInfoStep(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+
+
+        Row(modifier = Modifier.padding(horizontal = 9.dp)) {
+            Text(
+                text = stringResource(R.string.relation),
+                color = Color.Black,
+                fontFamily = FontFamily(Font(R.font.urbanist_regular)),
+                fontWeight = FontWeight.Normal,
+                modifier = Modifier.padding(start = 3.dp, bottom = 6.dp)
+            )
+            Text(
+                text = " *",
+                color = Color.Red,
+                fontFamily = FontFamily(Font(R.font.urbanist_regular)),
+                fontWeight = FontWeight.Normal,
+                modifier = Modifier.padding(bottom = 6.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(9.dp))
+        Row(modifier = Modifier.padding(horizontal = 7.dp)) {
+            CustomPowerSpinner(
+                selectedText = relation,
+                onSelectionChanged = { reason ->
+                    relation = reason
+                },
+                horizontalPadding = 14.dp,
+                reasons = familyRelations // Pass the list of options here
+            )
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+
         Row(modifier = Modifier.padding(horizontal = 7.dp)) {
             Dropdown1(
                 label = stringResource(R.string.height_label),
@@ -286,6 +376,7 @@ fun PersonalInfoStep(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+
         Row(modifier = Modifier.padding(horizontal = 9.dp)) {
             ProfilePhotoPicker(
                 label = stringResource(R.string.profile_photo_label),
@@ -304,18 +395,36 @@ fun PersonalInfoStep(
                 val height = if (heightValue.isNotBlank()) "$heightValue $heightUnit" else ""
                 val weight = if (weightValue.isNotBlank()) "$weightValue $weightUnit" else ""
 
-                viewModel.updatePersonalInfo(
-                    fullName = fullName,
-                    contactNumber = contactNumber,
-                    email = email,
-                    dateOfBirth = dateOfBirth,
-                    gender = gender,
-                    height = height,
-                    weight = weight,
-                    profilePhotoUri = selectedProfilePhotoUri
-                )
-                onNext()
-            }
+                    if(update) {
+                        viewModel.updatePersonalInfo(
+                            context, fullName = fullName,
+                            contactNumber = contactNumber,
+                            email = email,
+                            dateOfBirth = dateOfBirth,
+                            gender = gender,
+                            height = height,
+                            weight = weight,
+                            profilePhotoUri = selectedProfilePhotoUri,
+                            relationShip = relation, success = {
+                                onNext()
+                            }
+                        )
+                    }else{
+                        viewModel.addPersonalInfo(
+                            context, fullName = fullName,
+                            contactNumber = contactNumber,
+                            email = email,
+                            dateOfBirth = dateOfBirth,
+                            gender = gender,
+                            height = height,
+                            weight = weight,
+                            profilePhotoUri = selectedProfilePhotoUri,
+                            relationShip = relation, success = {
+                                onNext()
+                            }
+                        )
+                    }
+                }
             }
         )
 

@@ -2,6 +2,7 @@ package com.bussiness.curemegptapp.ui.screen.main.medication
 
 import android.net.Uri
 import android.os.Build
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -31,6 +32,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +52,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.bussiness.curemegptapp.R
@@ -65,6 +68,13 @@ import com.bussiness.curemegptapp.ui.component.UniversalInputField1
 import com.bussiness.curemegptapp.ui.component.input.CustomPowerSpinner
 import com.bussiness.curemegptapp.ui.dialog.CalendarDialog
 import com.bussiness.curemegptapp.ui.dialog.SuccessfulDialog
+import com.bussiness.curemegptapp.util.UriToRequestBody
+import com.bussiness.curemegptapp.viewmodel.medication.AddMedicationViewModel
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -73,9 +83,14 @@ import java.util.Locale
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
+
 fun AddMedicationScreen(
-    navController: NavHostController
+    navController: NavHostController,
+    viewModel : AddMedicationViewModel = hiltViewModel()
 ) {
+
+
+
     var dateOfBirth by remember { mutableStateOf("") }
     var startDate by remember { mutableStateOf("") }
     var endDate by remember { mutableStateOf("") }
@@ -85,48 +100,25 @@ fun AddMedicationScreen(
     var selectedMyself by remember { mutableStateOf("Select Member") }
     var selectFrequency by remember { mutableStateOf("Select Frequency") }
     var selectDayName by remember { mutableStateOf("Select Frequency") }
-    val myselfOptions =
-        listOf("Myself", "Jane Smith", "Alice Johnson", "Bob Williams") // Added example options
+    val myselfOptions by viewModel.memberOption.collectAsState()
     val selectedMedicationTypeOptions =
         listOf("Medicine", "Supplements")
     val selectDayNameOptions =
         listOf(   "Sunday",
-            "Monday",
-            "Tuesday",
-            "Wednesday",
-            "Thursday",
-            "Friday",
-            "Saturday") // Added example options
+            "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday") // Added example options
     val selectFrequencyOptions =
-        listOf("Daily", "Alternate Days", "Weekly") // Added example options
+        listOf("Daily", "Alternate", "Weekly") // Added example options
     var selectedMedicationType by remember { mutableStateOf("Select Medication Type") }
     var description by remember { mutableStateOf("") }
     var showDialog by remember { mutableStateOf(false) }
     var showDialog1 by remember { mutableStateOf(false) }
     var showDialogSuccessFully by remember { mutableStateOf(false) }
-    val appointmentOptions = listOf(
-        "Normal Check-up",
-        "Dental Check-up",
-        "Root Canal",
-        "Brain Check-up",
-        "Hair Check-up",
-        "Skin Check-up",
-        "Heart Check-up",
-        "Lungs Check-up",
-        "Liver Check-up",
-        "Intestine Check-up",
-        "Kidney Check-up",
-        "Bones Check-up",
-        "Feet Check-up",
-        "Hand Check-up",
-        "ENT Check-up"
-    )
 
-  //  var currentReminderTime by remember { mutableStateOf(listOf("")) }
-  var currentReminderTime by remember { mutableStateOf(listOf("")) }
+    //  var currentReminderTime by remember { mutableStateOf(listOf("")) }
+    var currentReminderTime by remember { mutableStateOf(listOf("")) }
 
     var uploadedFiles by remember { mutableStateOf<Uri?>(null) }
-    var checked by remember { mutableStateOf(false) }   // ⭐ FIXED
+    var checked by remember { mutableStateOf(false) }
 
     val filePickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -135,7 +127,7 @@ fun AddMedicationScreen(
             uploadedFiles = uri   // ⭐ Only one file stored
         }
     }
- // HH:MM:SS format function
+
     fun formatTimeInput(input: String): String {
         // Remove all non-digits
         val digits = input.filter { it.isDigit() }
@@ -162,18 +154,17 @@ fun AddMedicationScreen(
         return uri.lastPathSegment ?: "file"
     }
     val context = LocalContext.current
-      fun validateFields(): Boolean {
+    fun validateFields(): Boolean {
         // Debug: Print current reminder times
         println("DEBUG: Current reminder times: $currentReminderTime")
         println("DEBUG: Valid reminder times: ${currentReminderTime.filter { it.trim().isNotBlank() }}")
 
+        Log.d("TESTING_SELECTED_ID","SELECTED ID IS"+viewModel.selectedId)
         // Validate Member Selection
-        if (selectedMyself == "Myself" || selectedMyself.isBlank()) {
-            // "Myself" is the default and valid option
-        } else if (!myselfOptions.contains(selectedMyself)) {
-            Toast.makeText(context, "Please select a valid member", Toast.LENGTH_SHORT).show()
-            return false
-        }
+//         if (viewModel.selectedId == null || viewModel.selectedId!!.isBlank()) {
+//            Toast.makeText(context, "Please select a valid member", Toast.LENGTH_SHORT).show()
+//            return false
+//        }
 
         // Validate Medication Type Selection
         if (selectedMedicationType == "Select Appointment Type" || selectedMedicationType.isBlank()) {
@@ -308,24 +299,24 @@ fun AddMedicationScreen(
             }
         }
 
-  /*      // Validate File Upload (Optional)
-        if (uploadedFiles != null) {
-            val fileName = uploadedFiles?.lastPathSegment ?: ""
-            val allowedExtensions = listOf(".pdf", ".jpg", ".jpeg", ".png", ".dcm", ".dicom")
-            val extension = fileName.substringAfterLast(".", "").lowercase()
+        /*      // Validate File Upload (Optional)
+              if (uploadedFiles != null) {
+                  val fileName = uploadedFiles?.lastPathSegment ?: ""
+                  val allowedExtensions = listOf(".pdf", ".jpg", ".jpeg", ".png", ".dcm", ".dicom")
+                  val extension = fileName.substringAfterLast(".", "").lowercase()
 
-            if (extension !in allowedExtensions &&
-                !fileName.endsWith(".pdf", ignoreCase = true) &&
-                !fileName.endsWith(".jpg", ignoreCase = true) &&
-                !fileName.endsWith(".jpeg", ignoreCase = true) &&
-                !fileName.endsWith(".png", ignoreCase = true) &&
-                !fileName.endsWith(".dcm", ignoreCase = true) &&
-                !fileName.endsWith(".dicom", ignoreCase = true)) {
+                  if (extension !in allowedExtensions &&
+                      !fileName.endsWith(".pdf", ignoreCase = true) &&
+                      !fileName.endsWith(".jpg", ignoreCase = true) &&
+                      !fileName.endsWith(".jpeg", ignoreCase = true) &&
+                      !fileName.endsWith(".png", ignoreCase = true) &&
+                      !fileName.endsWith(".dcm", ignoreCase = true) &&
+                      !fileName.endsWith(".dicom", ignoreCase = true)) {
 
-                Toast.makeText(context, "Please upload only PDF, JPG, PNG, or DICOM files", Toast.LENGTH_SHORT).show()
-                return false
-            }
-        }*/
+                      Toast.makeText(context, "Please upload only PDF, JPG, PNG, or DICOM files", Toast.LENGTH_SHORT).show()
+                      return false
+                  }
+              }*/
 
         // Validate that reminder checkbox is checked if reminder times are set
         if (validReminderTimes.isNotEmpty() && !checked) {
@@ -334,6 +325,42 @@ fun AddMedicationScreen(
         }
 
         return true
+    }
+
+    // calling Api
+
+    fun submitMedication() {
+
+        val validReminderTimes = currentReminderTime.filter { it.trim().isNotBlank() }
+
+        val reminderParts = validReminderTimes.map {
+            MultipartBody.Part.createFormData("reminder_time[]", it)
+        }
+
+        val prescriptionPart: MultipartBody.Part? = uploadedFiles?.let { uri ->
+            UriToRequestBody.uriToMultipart(context,uri,"prescription_docs")
+        }
+
+        viewModel.addMedication(
+            forWhomId = viewModel.selectedId?.toRequestBody(),
+            medicationType = selectedMedicationType.toRequestBody(),
+            medicationName = medicationName.toRequestBody(),
+            dosage = dosage.toRequestBody(),
+            frequency = selectFrequency.toRequestBody(),
+            days = if (selectFrequency == "Weekly") selectDayName.toRequestBody() else null,
+            startDate = startDate.toRequestBody(),
+            endDate = endDate.toRequestBody(),
+            notes = description.toRequestBody(),
+            reminderStatus = if (checked) "1".toRequestBody() else "0".toRequestBody(),
+            reminderTimes = reminderParts,
+            prescriptionDocs = prescriptionPart,
+            onSuccess = {
+                showDialogSuccessFully = true
+            },
+            onError = { msg ->
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            }
+        )
     }
 
     Column(
@@ -363,7 +390,7 @@ fun AddMedicationScreen(
             CustomPowerSpinner(
                 selectedText = selectedMyself,
                 onSelectionChanged = { reason ->
-                    selectedMyself = reason
+                    viewModel.updateForWhomId(reason)
                 },
                 horizontalPadding = 24.dp,
                 reasons = myselfOptions // Pass the list of options here
@@ -465,7 +492,7 @@ fun AddMedicationScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-             if (currentReminderTime.any { it.trim().isNotBlank() }) {
+            if (currentReminderTime.any { it.trim().isNotBlank() }) {
 //                Text(
 //                    text = "${currentReminderTime.count { it.trim().isNotBlank() }} reminder(s) set",
 //                    fontSize = 12.sp,
@@ -481,14 +508,14 @@ fun AddMedicationScreen(
                 ) {
                     OutlinedTextField(
                         value = reminderValue,
-                      /*  onValueChange = { newValue ->
-                            if (index == 0) {
-                                val formattedValue = formatTimeInput(newValue) // ✅ FIXED: formatTimeInputHHMMSS नहीं, formatTimeInput
-                                val updated = currentReminderTime.toMutableList()
-                                updated[index] = formattedValue
-                                currentReminderTime = updated
-                            }
-                        },*/
+                        /*  onValueChange = { newValue ->
+                              if (index == 0) {
+                                  val formattedValue = formatTimeInput(newValue) // ✅ FIXED: formatTimeInputHHMMSS नहीं, formatTimeInput
+                                  val updated = currentReminderTime.toMutableList()
+                                  updated[index] = formattedValue
+                                  currentReminderTime = updated
+                              }
+                          },*/
                         onValueChange = { raw ->
 
                             if (index != 0) return@OutlinedTextField
@@ -714,35 +741,15 @@ fun AddMedicationScreen(
 
                 ContinueButton(text = stringResource(R.string.add_medication_button)/*"Add Medication"*/) {
                     if (validateFields()) {
-                        showDialogSuccessFully = true
+                        submitMedication()
+
                     }
                 }
             }
             Spacer(Modifier.height(37.dp))
         }
     }
-/*    if (showDialog) {
-        CalendarDialog(
-            onDismiss = { showDialog = false },
-            onDateApplied = {
-                // SELECTED DATE HERE
-                showDialog = false
-                dateOfBirth = it.toString()
-            }
-        )
-    }
-    if (showDialog1) {
-        CalendarDialog(
-            onDismiss = { showDialog = false },
-            onDateApplied = {
-                // SELECTED DATE HERE
-                showDialog = false
-                dateOfBirth = it.toString()
-            }
-        )
-    }*/
-
-     // Start Date Dialog
+    // Start Date Dialog
     if (showDialog) {
         CalendarDialog(
             onDismiss = { showDialog = false },
@@ -774,14 +781,15 @@ fun AddMedicationScreen(
         )
     }
 
+
 }
 
 
-@RequiresApi(Build.VERSION_CODES.O)
-@Preview(showBackground = true)
-@Composable
-fun AddMedicationScreenPreview() {
-    val navController = rememberNavController()
-    AddMedicationScreen(navController = navController)
-}
+    @RequiresApi(Build.VERSION_CODES.O)
+    @Composable
+    fun AddMedicationScreenPreview() {
+        val navController = rememberNavController()
+        AddMedicationScreen(navController = navController)
+    }
+
 

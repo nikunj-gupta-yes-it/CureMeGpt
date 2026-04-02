@@ -185,9 +185,6 @@ fun ProfileInputField2(
     val shape = RoundedCornerShape(30.dp)
 
     Column(modifier = modifier.fillMaxWidth()) {
-
-        // 🔹 Label Text (top of field)
-
         Row {
             Text(
                 text = buildLabelWithOptional(label),

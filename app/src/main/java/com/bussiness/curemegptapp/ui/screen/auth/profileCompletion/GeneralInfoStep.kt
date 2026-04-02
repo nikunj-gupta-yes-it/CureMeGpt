@@ -24,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -203,6 +204,22 @@ fun GeneralInfoStep(
             Spacer(modifier = Modifier.height(16.dp))
 
             if ("Others" in selectedAllergies) {
+
+                var showValues = ""
+                selectedAllergies.forEach { item ->
+                    if (!allergyOptions.contains(item)) {
+                        showValues += "$item, "
+                    }
+                }
+
+                if (showValues.isNotEmpty()) {
+                    showValues = showValues.substring(0, showValues.length - 2)
+                }
+
+                LaunchedEffect(Unit) {
+                    customAllergy = showValues
+                }
+
                 ProfileInputWithoutLabelField(
                     placeholder = stringResource(R.string.write_allergy_placeholder),//"Write allergy",
                     value = customAllergy,

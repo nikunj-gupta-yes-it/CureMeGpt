@@ -26,6 +26,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,11 +60,43 @@ fun HistoryStep(
     profileData: ProfileData,
     onNext: () -> Unit
 ) {
-    var selectedConditions by remember { mutableStateOf(setOf<String>()) }
-    var surgicalHistory by remember { mutableStateOf("") }
-    var currentMedications by remember { mutableStateOf(listOf("")) }
-    var currentSupplements by remember { mutableStateOf(listOf("")) }
+
+//    var selectedConditions by remember { mutableStateOf(setOf<String>()) }
+    var selectedConditions by remember(profileData) {
+        mutableStateOf(profileData.chronicConditions.toSet())
+    }
+
+ //   var surgicalHistory by remember { mutableStateOf("") }
+
+    var surgicalHistory by remember(profileData) {
+        mutableStateOf(profileData.surgicalHistory)
+    }
+
+   // var currentMedications by remember { mutableStateOf(listOf("")) }
+
+    var currentMedications by remember(profileData) {
+        mutableStateOf(
+            if (profileData.currentMedications.isNotEmpty())
+                profileData.currentMedications
+            else listOf("")
+        )
+    }
+
+  //  var currentSupplements by remember { mutableStateOf(listOf("")) }
+
+
+    var currentSupplements by remember(profileData) {
+        mutableStateOf(
+             if (profileData.currentSupplements.isNotEmpty()) profileData.currentSupplements
+                    else listOf("")
+        )
+    }
+
     var customCondition by remember { mutableStateOf("") }
+    val update by remember {
+        derivedStateOf { profileData.chronicConditions.isNotEmpty() }
+    }
+
     val context = LocalContext.current
     val conditions = listOf(
         "Diabetes", "Asthma", "Hypertension", "Thyroid",
@@ -160,6 +194,22 @@ fun HistoryStep(
             Spacer(modifier = Modifier.height(16.dp))
             // ⭐ Custom allergy field — only if Others selected
             if ("Others" in selectedConditions) {
+
+                var showValues = ""
+                selectedConditions.forEach { item ->
+                    if (!selectedConditions.contains(item)) {
+                        showValues += "$item, "
+                    }
+                }
+
+                if (showValues.isNotEmpty()) {
+                    showValues = showValues.substring(0, showValues.length - 2)
+                }
+
+                LaunchedEffect(Unit) {
+                    customCondition = showValues
+                }
+
 
                 ProfileInputWithoutLabelField(
                     placeholder = stringResource(R.string.write_condition_placeholder),//"Write Condition",
@@ -440,15 +490,37 @@ fun HistoryStep(
                 if ("Others" in selectedConditions && customCondition.isNotEmpty()) {
                     conditionsList.add(customCondition)
                 }
+                    if(update) {
 
-                viewModel.updateMedicalHistory(
-                    chronicConditions = conditionsList,
-                    surgicalHistory = surgicalHistory,
-                    currentMedications = currentMedications.filter { it.isNotBlank() },
-                    currentSupplements = currentSupplements.filter { it.isNotBlank() }
-                )
-                onNext()
-            }
+                        viewModel.updateMedicalHistory(
+                            chronicConditions = conditionsList,
+                            surgicalHistory = surgicalHistory,
+                            currentMedications = currentMedications.filter { it.isNotBlank() },
+                            currentSupplements = currentSupplements.filter { it.isNotBlank() },
+                            onSuccess = {
+                                 onNext()
+                            },
+                            onError = {
+                                msg ->
+                                Toast.makeText(context,msg,Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    }else{
+                        viewModel.addMedicalHistory(
+                            chronicConditions = conditionsList,
+                            surgicalHistory = surgicalHistory,
+                            currentMedications = currentMedications.filter { it.isNotBlank() },
+                            currentSupplements = currentSupplements.filter { it.isNotBlank() },
+                            onSuccess = {
+                              onNext()
+                            },
+                            onError = {
+                                msg ->
+                                Toast.makeText(context,msg,Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    }
+                }
             }
         )
 

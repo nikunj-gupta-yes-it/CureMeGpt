@@ -34,16 +34,17 @@ import com.bussiness.curemegptapp.ui.component.input.CustomPowerSpinner
 
 @Composable
 fun FilterAppointmentsBottomSheet(
-    onDismiss: () -> Unit,
+    onDismiss: () -> Unit, memberOptions: List<String> = listOf("John Doe", "Jane Smith", "Alice Johnson", "Bob Williams"),
     onApply: (selectedFilter: String, selectedMember: String?) -> Unit,
     modifier: Modifier = Modifier
 ) {
     // 🔥 Updated: Only ONE selected field
     var selectedFilter by remember { mutableStateOf("Upcoming") }
 
-    var selectedMember by remember { mutableStateOf("Select") }
+    var selectedMember by remember { mutableStateOf(memberOptions.get(0)) }
     var showDropdown by remember { mutableStateOf(false) }
-    val memberOptions = listOf("John Doe", "Jane Smith", "Alice Johnson", "Bob Williams") // Added example options
+
+   // val memberOptions = listOf("John Doe", "Jane Smith", "Alice Johnson", "Bob Williams") // Added example options
     Column(
         modifier = Modifier
             .fillMaxWidth()

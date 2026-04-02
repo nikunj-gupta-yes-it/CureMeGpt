@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -53,6 +54,7 @@ fun GeneralInfoStep(
     profileData: ProfileData,
     onNext: () -> Unit
 ) {
+    var update by remember { mutableStateOf(profileData.bloodGroup != "Select") }
     var bloodGroup by remember { mutableStateOf(profileData.bloodGroup) }
     var selectedAllergies by remember { mutableStateOf(profileData.allergies.toSet()) }
     var customAllergy by remember { mutableStateOf("") }
@@ -197,6 +199,20 @@ fun GeneralInfoStep(
             Spacer(modifier = Modifier.height(16.dp))
 
             if ("Others" in selectedAllergies) {
+                var showValues = ""
+                selectedAllergies.forEach { item ->
+                    if (!allergyOptions.contains(item)) {
+                        showValues += "$item, "
+                    }
+                }
+
+                if (showValues.isNotEmpty()) {
+                    showValues = showValues.substring(0, showValues.length - 2)
+                }
+
+                LaunchedEffect(Unit) {
+                    customAllergy = showValues
+                }
                 ProfileInputWithoutLabelField(
                     placeholder = stringResource(R.string.write_allergy_placeholder),//"Write allergy",
                     value = customAllergy,
@@ -233,14 +249,33 @@ fun GeneralInfoStep(
                 if ("Others" in selectedAllergies && customAllergy.isNotEmpty()) {
                     allergiesList.add(customAllergy)
                 }
+                    if(update) {
 
-                viewModel.updateGeneralInfo(
-                    bloodGroup = bloodGroup,
-                    allergies = allergiesList,
-                    emergencyName = emergencyName,
-                    emergencyPhone = emergencyPhone
-                )
-                onNext()
+                        viewModel.updateGeneralInfo(
+                            bloodGroup = bloodGroup,
+                            allergies = allergiesList,
+                            emergencyName = emergencyName,
+                            emergencyPhone = emergencyPhone,
+                            onError = { msg ->
+                                Toast.makeText(context, msg.toString(), Toast.LENGTH_SHORT).show()
+                            }, {
+                                onNext()
+                            }
+                        )
+                    }else{
+                        viewModel.addGeneralInfo(
+                            bloodGroup = bloodGroup,
+                            allergies = allergiesList,
+                            emergencyName = emergencyName,
+                            emergencyPhone = emergencyPhone,
+                            onError = { msg ->
+                                Toast.makeText(context, msg.toString(), Toast.LENGTH_SHORT).show()
+                            }, {
+                                onNext()
+                            }
+                        )
+                    }
+
             }
             }
         )

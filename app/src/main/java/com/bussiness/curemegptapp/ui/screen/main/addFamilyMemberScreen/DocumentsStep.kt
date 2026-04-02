@@ -21,6 +21,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -54,10 +57,14 @@ fun DocumentsStep(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val update by remember {
+        derivedStateOf { profileData.uploadedFiles.isNotEmpty() }
+    }
+
     val filePickerLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenMultipleDocuments()
     ) { uris ->
-        uris?.forEach { uri ->
+        uris.forEach { uri ->
             viewModel.addUploadedFile(uri)
         }
     }
@@ -151,30 +158,7 @@ fun DocumentsStep(
             Spacer(modifier = Modifier.height(24.dp))
         }
 
-/*        GradientButton(
-            text = stringResource(R.string.button_get_started),//"Get Started",
-            onClick = {
-                viewModel.submitProfile()
 
-                // Toast show karein summary
-                val summary = """
-                    Profile Completed!
-                    Name: ${profileData.fullName}
-                    Contact: ${profileData.contactNumber}
-                    Email: ${profileData.email}
-                    Files: ${profileData.uploadedFiles.size}
-                """.trimIndent()
-                // Create toast message
-                val toastMessage = context.getString(R.string.profile_completed_toast)
-                Toast.makeText(
-                    context,
-                    toastMessage,
-                    Toast.LENGTH_LONG
-                ).show()
-                onNext()
-
-            }
-        )*/
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -184,31 +168,31 @@ fun DocumentsStep(
                 onBack()
             }
 
-            ContinueButton(text = "Save Member"/*"Schedule"*/) {
-                viewModel.submitProfile()
-
-                // Toast show karein summary
-                val summary = """
-                    Profile Completed!
-                    Name: ${profileData.fullName}
-                    Contact: ${profileData.contactNumber}
-                    Email: ${profileData.email}
-                    Files: ${profileData.uploadedFiles.size}
-                """.trimIndent()
-                // Create toast message
-                val toastMessage = context.getString(R.string.profile_completed_toast)
-                Toast.makeText(
-                    context,
-                    toastMessage,
-                    Toast.LENGTH_LONG
-                ).show()
-                onNext()
+            ContinueButton(text = "Save Member") {
+              //  viewModel.submitProfile()
+                if(!update) {
+                    viewModel.uploadFiles(
+                        context,
+                        onSuccess = {
+                            onNext()
+                        },
+                        onError = { msg ->
+                            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                        }
+                    )
+                }else{
+                    viewModel.updateFiles(
+                        context, onSuccess = {
+                            onNext()
+                        },
+                        onError = {
+                            msg -> Toast.makeText(context,msg,Toast.LENGTH_LONG).show()
+                        }
+                    )
+                }
             }
         }
-
         Spacer(modifier = Modifier.height(16.dp))
-
-
     }
 }
 
@@ -224,10 +208,10 @@ private fun fakeProfileData() = ProfileData(
 @Preview(showBackground = true)
 @Composable
 fun DocumentsStepPreview() {
-    DocumentsStep(
-        viewModel = AddFamilyMemberViewModel(),
-        profileData = fakeProfileData(),
-        onNext = {},
-        onBack = {}
-    )
+//    DocumentsStep(
+//        viewModel = AddFamilyMemberViewModel(),
+//        profileData = fakeProfileData(),
+//        onNext = {},
+//        onBack = {}
+//    )
 }

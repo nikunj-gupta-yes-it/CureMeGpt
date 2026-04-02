@@ -43,12 +43,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bussiness.curemegptapp.R
+import com.bussiness.curemegptapp.apimodel.medication.Medication
+import com.bussiness.curemegptapp.apimodel.medication.MedicationTime
 import com.bussiness.curemegptapp.ui.component.GradientRedButton
 
 @Composable
-fun MedicationsCard(medication: Medication,onEditClick: () -> Unit,
-                    onDeleteClick: () -> Unit) {
-    var timeStates by remember { mutableStateOf(medication.times.map { it.isChecked }) }
+fun MedicationsCard( medication: Medication,
+                     onEditClick: () -> Unit,
+                     onDeleteClick: () -> Unit) {
+
+    var timeStates by remember { mutableStateOf(medication.times.map { true }) }
     var checkedState by remember { mutableStateOf(false) }
 
     Surface(
@@ -57,12 +61,10 @@ fun MedicationsCard(medication: Medication,onEditClick: () -> Unit,
         color = Color(0xFFF9F9FD),
         border =  BorderStroke(1.dp, Color(0xFFE7E6F8))
     ) {
+
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Min) .padding(20.dp)
+            modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(20.dp)
         ) {
-            // Icon Column
             Box(
                 modifier = Modifier
                     .width(54.dp)
@@ -203,13 +205,15 @@ fun MedicationsCard(medication: Medication,onEditClick: () -> Unit,
                         modifier = Modifier.size(24.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = medication.days,
-                        fontSize = 14.sp,
-                        color = Color.Black,
-                        fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-                        fontWeight = FontWeight.Normal
-                    )
+                    medication.days?.let {
+                        Text(
+                            text = it,
+                            fontSize = 14.sp,
+                            color = Color.Black,
+                            fontFamily = FontFamily(Font(R.font.urbanist_regular)),
+                            fontWeight = FontWeight.Normal
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -330,7 +334,6 @@ fun MedicationsCard(medication: Medication,onEditClick: () -> Unit,
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                // Second column items
                                 times.drop(10).take(2).forEachIndexed { originalIndex, timeSlot ->
                                     val index = originalIndex + 2
                                     Box(
@@ -343,7 +346,7 @@ fun MedicationsCard(medication: Medication,onEditClick: () -> Unit,
                                 }
                             }
                         }
-                }
+                   }
                 }
 
 
@@ -428,7 +431,7 @@ fun TimeSlotItem(
                 shape = RoundedCornerShape(50.dp)
             )
             .padding(horizontal = 8.dp, vertical = 6.dp),
-        contentAlignment = Alignment.Center   // ✅ Center horizontally + vertically
+            contentAlignment = Alignment.Center   // ✅ Center horizontally + vertically
     ) {
 
         Text(
@@ -438,6 +441,8 @@ fun TimeSlotItem(
             fontFamily = FontFamily(Font(R.font.urbanist_regular)),
             fontWeight = FontWeight.Normal
         )
+
+
     }
 }
 
@@ -461,7 +466,8 @@ fun MedicationsCardPreview() {
         startDate = "08/28/2025",
         endDate = "10/28/2025",
         instructions = "For asthma symptoms",
-        isVisibleItem = true
+        isVisibleItem = true,
+        id=0
     )
 
     MedicationsCard(medication = sampleMedication, onEditClick = {}, onDeleteClick = {})

@@ -95,10 +95,21 @@ fun MainNavGraph(
             AlertScreen(navController)
         }
         composable<AppDestination.FamilyPersonProfile> {
-            FamilyPersonProfileScreen(navController)
+
+            val id = navController
+                .previousBackStackEntry
+                ?.savedStateHandle
+                ?.get<Int>("id")
+
+            FamilyPersonProfileScreen(
+                navController = navController,
+                id = id
+            )
+
         }
 
         composable<AppDestination.MyProfileScreen> {
+
             MyProfileScreen(navController)
         }
 
@@ -166,9 +177,15 @@ fun MainNavGraph(
 
         composable<AppDestination.EditFamilyMemberDetailsScreen> { EditFamilyMemberDetailsScreen(navController) }
 
-        composable<AppDestination.RescheduleAppointmentScreen> { RescheduleAppointmentScreen(navController) }
+        composable<AppDestination.RescheduleAppointmentScreen> {
+            val appointment = navController.previousBackStackEntry?.savedStateHandle?.get<Int>("appointmentId")
+            RescheduleAppointmentScreen(navController, appointmentId = appointment?:0)
+        }
 
-        composable<AppDestination.EditMedicationScreen> { EditMedicationScreen(navController) }
+        composable<AppDestination.EditMedicationScreen> {
+            val medicationId = navController.previousBackStackEntry?.savedStateHandle?.get<Int>("medicationId")?:0
+            EditMedicationScreen(navController,medicationId)
+        }
 
         composable(
             route = "openChat?from={from}",

@@ -2,7 +2,6 @@ package com.bussiness.curemegptapp.ui.screen.main.familyPersonProfile
 
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
@@ -38,6 +37,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -59,6 +59,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -80,9 +81,18 @@ import com.canhub.cropper.CropImageOptions
 @Composable
 fun FamilyPersonProfileScreen(
     navController: NavHostController,
-    viewModel: FamilyProfileViewModel = viewModel()
+    id: Int? =0,
+    viewModel: FamilyProfileViewModel = hiltViewModel()
 ) {
+
     val context = LocalContext.current
+
+    LaunchedEffect(id) {
+        id?.let {
+            viewModel.loadFamilyMember(it)
+        }
+    }
+
     var bitmap: Bitmap? by remember { mutableStateOf(null) }
     var showPhotoSheet by remember { mutableStateOf(false) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
@@ -95,12 +105,13 @@ fun FamilyPersonProfileScreen(
         contract = CropImageContract()
     ) { result ->
         if (result.isSuccessful) {
-            result.uriContent?.let { uri ->
-                // Process the cropped image
-                imageUri = uri
-                selectedProfilePhotoUri = uri // यहाँ हम selected photo URI set कर रहे हैं
 
-                // Bitmap process करें (अगर जरूरी हो)
+            result.uriContent?.let { uri ->
+
+                imageUri = uri
+
+                selectedProfilePhotoUri = uri
+
                 if (Build.VERSION.SDK_INT < 28) {
                     bitmap = MediaStore.Images.Media.getBitmap(context.contentResolver, uri)
                 } else {
@@ -108,12 +119,13 @@ fun FamilyPersonProfileScreen(
                     bitmap = ImageDecoder.decodeBitmap(source)
                 }
 
-                // यहाँ आप viewModel में save कर सकते हैं (अगर चाहें)
-                // viewModel.saveProfilePhoto(uri.toString())
+            // viewModel.saveProfilePhoto(uri.toString())
+
             }
         } else {
-            // Handle error
+
             println("ImageCropping error: ${result.error}")
+
         }
     }
 
@@ -122,7 +134,7 @@ fun FamilyPersonProfileScreen(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            // Permission granted, launch camera
+
             val cropOptions = CropImageContractOptions(
                 null,
                 CropImageOptions(imageSourceIncludeGallery = false)
@@ -140,20 +152,7 @@ fun FamilyPersonProfileScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
 
 
-//    val profilePhotoPickerLauncher =
-//        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-//            uri?.let {
-//                context.contentResolver.takePersistableUriPermission(
-//                    it,
-//                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-//                )
-//                selectedProfilePhotoUri = it
-//            }
-//        }
-//
-//    fun openProfilePhotoPicker() {
-//        profilePhotoPickerLauncher.launch(arrayOf("image/*"))
-//    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -161,9 +160,9 @@ fun FamilyPersonProfileScreen(
     ) {
         // Loading State
         if (isLoading) {
-            CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center)
-            )
+//            CircularProgressIndicator(
+//                modifier = Modifier.align(Alignment.Center)
+//            )
         }
 
         // Error State
@@ -225,8 +224,14 @@ fun FamilyPersonProfileScreen(
             onDismiss = { showDeleteDialog = false },
             onConfirm = {
                 showDeleteDialog = false
-                viewModel.deleteFamilyMember()
-                navController.popBackStack()
+              //  viewModel.deleteFamilyMember()
+                id?.let {
+                    viewModel.deleteProfile(id, {
+                        navController.popBackStack()
+                        }, { msg ->
+                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                    })
+                }
             }
         )
     }
@@ -355,7 +360,9 @@ fun FamilyMemberProfileContent(
                                     interactionSource = remember { MutableInteractionSource() },
                                     indication = null
                                 ) {
-                                    navController.navigate(AppDestination.EditFamilyMemberDetailsScreen)
+                                 //   navController.navigate(AppDestination.EditFamilyMemberDetailsScreen)
+                                    navController.navigate("addFamilyMember?from=${member.id}")
+
                                 }
                             )
                         }
@@ -394,15 +401,34 @@ fun FamilyMemberProfileContent(
                             contentScale = ContentScale.Crop
                         )*/
                         if (selectedProfilePhotoUri != null) {
+
                             AsyncImage(
                                 model = selectedProfilePhotoUri,
-                                contentDescription = stringResource(R.string.profile_photo_description, member.name),
+                                contentDescription = stringResource(
+                                    R.string.profile_photo_description,
+                                    member.name
+                                ),
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .clip(CircleShape),
                                 contentScale = ContentScale.Crop
                             )
-                        } else {
+                        }
+                        else if(!member.profileImage.isNullOrEmpty()){
+                            AsyncImage(
+                                model = member.profileImage,
+                                contentDescription = stringResource(
+                                    R.string.profile_photo_description,
+                                    member.name
+                                ),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+
+                        else {
                             Image(
                                 painter = painterResource(id = R.drawable.ic_profile_image),
                                 contentDescription = stringResource(R.string.profile_photo_description, member.name),

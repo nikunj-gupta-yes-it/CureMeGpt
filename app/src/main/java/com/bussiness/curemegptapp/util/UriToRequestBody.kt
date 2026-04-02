@@ -14,24 +14,16 @@ object UriToRequestBody {
         val contentResolver = context.contentResolver
         val inputStream = contentResolver.openInputStream(uri)
         val bytes = inputStream?.readBytes() ?: ByteArray(0)
-
         return bytes.toRequestBody("application/octet-stream".toMediaTypeOrNull())
     }
 
     fun uriToMultipart(context: Context, uri: Uri, partName: String): MultipartBody.Part {
-
         val contentResolver = context.contentResolver
         val inputStream = contentResolver.openInputStream(uri)
         val bytes = inputStream?.readBytes() ?: ByteArray(0)
-
         val fileName = getFileName(context, uri) ?: "file"
-
-        val requestFile =
-            bytes.toRequestBody("application/octet-stream".toMediaTypeOrNull())
-
-        return MultipartBody.Part.createFormData(
-            partName,
-            fileName,
+        val requestFile = bytes.toRequestBody("application/octet-stream".toMediaTypeOrNull())
+        return MultipartBody.Part.createFormData(partName, fileName,
             requestFile
         )
     }
@@ -47,6 +39,7 @@ object UriToRequestBody {
         }
         return name
     }
+
     fun uriListToMultipartList(
         context: Context,
         uris: List<Uri>,
@@ -59,3 +52,11 @@ object UriToRequestBody {
     }
 
 }
+
+//Design an image caching library like glide.
+//Design a 1 to 1 Chat application which can also send images, videos.
+//Design a App Store.
+//Design an e-commerce app’s homepage.
+//Design a stock market app’s ticker page. The page which displays the prices of stocks.
+
+

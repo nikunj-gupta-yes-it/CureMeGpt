@@ -40,9 +40,10 @@ class AppointmentViewModel  @Inject constructor(
 
     private var _memberOption = MutableStateFlow(listOf<String>())
     val memberOption = _memberOption
+    private var memberRealData = mutableListOf<FamilyModel>()
 
     private var appointmentTypeRealData = mutableListOf<AppointmentTypeModel>()
-    private var memberRealData = mutableListOf<FamilyModel>()
+
 
     private var _appointmentTypeOption = MutableStateFlow(listOf<String>())
     val appointmentTypeOption = _appointmentTypeOption
@@ -117,8 +118,8 @@ class AppointmentViewModel  @Inject constructor(
                              appointmentRequest.value.time,
                              appointmentRequest.value.preferredDoctor,
                              appointmentRequest.value.preferredClinic,
-                             appointmentRequest.value.appointmentReminder
-            ).collectLatest {
+                             appointmentRequest.value.appointmentReminder,
+                             null).collectLatest {
                 when(it){
                     is NetworkResult.Success ->{
                         LoaderManager.hide()

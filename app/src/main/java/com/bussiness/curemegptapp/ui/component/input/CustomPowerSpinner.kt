@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -43,6 +44,114 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bussiness.curemegptapp.R
 
+//@Composable
+//fun CustomPowerSpinner(
+//    modifier: Modifier = Modifier,
+//    modifierDropDown: Modifier = Modifier,
+//    selectedText: String = "Select",
+//    onSelectionChanged: (String) -> Unit = {},
+//    horizontalPadding: Dp = 24.dp,
+//    reasons: List<String> = listOf()
+//) {
+//    var expanded by remember { mutableStateOf(false) }
+//    var selectedReason by remember { mutableStateOf(selectedText) }
+//
+//
+//    LaunchedEffect(selectedText) {
+//        selectedReason = selectedText
+//    }
+//
+//    BoxWithConstraints(modifier = modifier.background(Color.White)) {
+//        val dropdownWidth = maxWidth - 0.dp
+//        // Main button
+//        Card(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//                .clickable(  interactionSource = remember { MutableInteractionSource() },
+//                    indication = null){ expanded = !expanded },
+//            colors = CardDefaults.cardColors(containerColor = Color.White),
+//            border = BorderStroke(1.dp, Color(0xFF697383)),
+//            shape = RoundedCornerShape(50.dp),
+//            elevation = CardDefaults.cardElevation(0.dp)
+//        ) {
+//            Row(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//                    .padding(16.dp),
+//                horizontalArrangement = Arrangement.SpaceBetween,
+//                verticalAlignment = Alignment.CenterVertically
+//            ) {
+//                Text(
+//                    text = selectedReason,
+////                    color = if (selectedReason == "Select") Color(0xFF697383) else  Color.Black,
+//                    color = if (selectedReason.trim().startsWith("Select", ignoreCase = true))
+//                        Color(0xFF697383)
+//                    else
+//                        Color.Black,
+//                    fontSize = 13.sp,
+//                    fontFamily = FontFamily(Font(R.font.urbanist_regular)),
+//                    )
+//
+//                Image(
+//                    painter = painterResource(if (expanded) R.drawable.ic_dropdown_show else R.drawable.ic_dropdown_icon),
+//                    contentDescription = "",
+//                )
+//            }
+//        }
+//
+//
+//        DropdownMenu(
+//            expanded = expanded,
+//            onDismissRequest = { expanded = false },
+//            modifier = modifierDropDown
+//                .width(dropdownWidth)
+//                .heightIn(max = 300.dp)
+//                .padding(horizontal = 15.dp, vertical = 5.dp)
+//                .background(Color.White, RoundedCornerShape(20.dp)),
+//            containerColor = Color.White,
+//            shape = RoundedCornerShape(12.dp),
+//        ) {
+//            reasons.forEachIndexed { index, reason ->
+//                val isSelected = reason == selectedReason
+//
+//                Box(
+//                    modifier = Modifier
+//                        .fillMaxWidth()
+//                        .padding(horizontal = 10.dp, vertical = 6.dp)
+//                        .clip(RoundedCornerShape(50.dp))
+//                        .background(
+//                            brush = if (isSelected)
+//                                Brush.horizontalGradient(
+//                                    colors = listOf(
+//                                        Color(0xFF4338CA),
+//                                        Color(0xFF211C64)
+//                                    )
+//                                )
+//                            else Brush.linearGradient(listOf(Color.Unspecified, Color.Unspecified)),
+//                            shape = RoundedCornerShape(50.dp)
+//                        )
+//
+//                        .clickable( interactionSource = remember { MutableInteractionSource() },
+//                        indication = null){
+//                            selectedReason = reason
+//                            expanded = false
+//                            onSelectionChanged(reason)
+//                        }
+//                        .padding(horizontal = 14.dp, vertical = 6.dp)
+//                ) {
+//
+//                    Text(
+//                        text = reason,
+//                        color = if (isSelected) Color.White else Color.Black,
+//                        fontSize = 16.sp
+//                    )
+//                }
+//            }
+//        }
+//
+//    }
+//}
+
 @Composable
 fun CustomPowerSpinner(
     modifier: Modifier = Modifier,
@@ -50,29 +159,39 @@ fun CustomPowerSpinner(
     selectedText: String = "Select",
     onSelectionChanged: (String) -> Unit = {},
     horizontalPadding: Dp = 24.dp,
-    reasons: List<String> = listOf()
+    reasons: List<String> = listOf(),
+    enabled: Boolean = true   // ✅ NEW PARAMETER
 ) {
     var expanded by remember { mutableStateOf(false) }
     var selectedReason by remember { mutableStateOf(selectedText) }
-
 
     LaunchedEffect(selectedText) {
         selectedReason = selectedText
     }
 
-    BoxWithConstraints(modifier = modifier.background(Color.White)) {
-        val dropdownWidth = maxWidth - 0.dp
-        // Main button
+    BoxWithConstraints(
+        modifier = modifier
+            .background(Color.White)
+            .alpha(if (enabled) 1f else 0.6f)   // visually disabled
+    ) {
+        val dropdownWidth = maxWidth
+
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(  interactionSource = remember { MutableInteractionSource() },
-                    indication = null){ expanded = !expanded },
+                .clickable(
+                    enabled = enabled,   // ✅ disable click
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    expanded = !expanded
+                },
             colors = CardDefaults.cardColors(containerColor = Color.White),
             border = BorderStroke(1.dp, Color(0xFF697383)),
             shape = RoundedCornerShape(50.dp),
             elevation = CardDefaults.cardElevation(0.dp)
         ) {
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -80,27 +199,29 @@ fun CustomPowerSpinner(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+
                 Text(
                     text = selectedReason,
-//                    color = if (selectedReason == "Select") Color(0xFF697383) else  Color.Black,
                     color = if (selectedReason.trim().startsWith("Select", ignoreCase = true))
                         Color(0xFF697383)
                     else
                         Color.Black,
                     fontSize = 13.sp,
                     fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-                    )
+                )
 
                 Image(
-                    painter = painterResource(if (expanded) R.drawable.ic_dropdown_show else R.drawable.ic_dropdown_icon),
+                    painter = painterResource(
+                        if (expanded) R.drawable.ic_dropdown_show
+                        else R.drawable.ic_dropdown_icon
+                    ),
                     contentDescription = "",
                 )
             }
         }
 
-
         DropdownMenu(
-            expanded = expanded,
+            expanded = expanded && enabled,   // ✅ prevent opening if disabled
             onDismissRequest = { expanded = false },
             modifier = modifierDropDown
                 .width(dropdownWidth)
@@ -110,7 +231,9 @@ fun CustomPowerSpinner(
             containerColor = Color.White,
             shape = RoundedCornerShape(12.dp),
         ) {
-            reasons.forEachIndexed { index, reason ->
+
+            reasons.forEach { reason ->
+
                 val isSelected = reason == selectedReason
 
                 Box(
@@ -126,12 +249,16 @@ fun CustomPowerSpinner(
                                         Color(0xFF211C64)
                                     )
                                 )
-                            else Brush.linearGradient(listOf(Color.Unspecified, Color.Unspecified)),
+                            else Brush.linearGradient(
+                                listOf(Color.Unspecified, Color.Unspecified)
+                            ),
                             shape = RoundedCornerShape(50.dp)
                         )
-
-                        .clickable( interactionSource = remember { MutableInteractionSource() },
-                        indication = null){
+                        .clickable(
+                            enabled = enabled,  // ✅ disable option click
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {
                             selectedReason = reason
                             expanded = false
                             onSelectionChanged(reason)
@@ -147,6 +274,5 @@ fun CustomPowerSpinner(
                 }
             }
         }
-
     }
 }

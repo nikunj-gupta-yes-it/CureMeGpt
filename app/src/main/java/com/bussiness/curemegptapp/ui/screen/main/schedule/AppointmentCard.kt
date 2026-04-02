@@ -1,5 +1,6 @@
 package com.bussiness.curemegptapp.ui.screen.main.schedule
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -42,10 +43,11 @@ import com.bussiness.curemegptapp.ui.viewModel.main.AppointmentUIModel
 
 @Composable
 fun AppointmentCard(appointment: AppointmentUIModel, onEditClick: () -> Unit,
-                    onDeleteClick: () -> Unit, onViewClick: () -> Unit) {
+                    onDeleteClick: () -> Unit, onViewClick: () -> Unit,onCheckClick :() ->Unit) {
     var showMenu by remember { mutableStateOf(false) }
 
-    var checkedState by remember { mutableStateOf(false) }
+    var checkedState by remember { mutableStateOf(if(appointment.completeStatus==0) false else true ) }
+    Log.d("TESTING_CHECK_STATE","Checked State is "+checkedState)
     Surface(
         modifier = Modifier.fillMaxWidth().wrapContentHeight(),
         shape = RoundedCornerShape(40.dp),
@@ -106,7 +108,10 @@ fun AppointmentCard(appointment: AppointmentUIModel, onEditClick: () -> Unit,
                     PostContentMenu(
                         modifier = Modifier,
                         checked = checkedState,
-                        onCheckedChange = { checkedState = it },
+                        onCheckedChange = {
+                            checkedState = it
+                            onCheckClick()
+                                          },
                         onEditClick = { onEditClick()},
                         onDeleteClick = { onDeleteClick()  })
                 }

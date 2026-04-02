@@ -50,6 +50,7 @@
     <string name="date_of_birth_label">Date of Birth</string>
     <string name="date_of_birth_placeholder">MM-DD-YYYY</string>
     <string name="gender_label">Gender</string>
+    <string name ="relation">Relation</string>
     <string name="gender_male">Male</string>
     <string name="gender_female">Female</string>
     <string name="gender_other">Other</string>

@@ -41,19 +41,11 @@ import androidx.compose.foundation.lazy.items
 
 @Composable
 fun FilterFamilyMembersSheet(
-
-//    members : List<String> = listOf(
-//        "James (Myself)",
-//        "Rose Logan (Spouse)",
-//        "Peter Logan (Son)"
-//    ),
     members: List<String>,
     selected: String?,
     onSelect: (String?) -> Unit
 ) {
     var selectedMember by remember { mutableStateOf(selected) }
-
-
 
     Column(
         modifier = Modifier
@@ -64,7 +56,6 @@ fun FilterFamilyMembersSheet(
             .padding( 20.dp)
     ) {
 
-        // 👉 Top Indicator
         Box(
             modifier = Modifier
                 .width(82.dp)
