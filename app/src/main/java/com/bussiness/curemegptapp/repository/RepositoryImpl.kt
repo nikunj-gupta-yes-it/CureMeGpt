@@ -1762,11 +1762,8 @@ class RepositoryImpl @Inject constructor(
                         val familyArray = data?.getArraySafe("familyDetails")
 
                         familyArray?.forEach { element ->
-
                             if (element.isJsonNull) return@forEach
-
                             val obj = element.asJsonObject
-
                             list.add(
                                 FamilyModel(
                                     id = obj.get("id")?.asInt ?: 0,

@@ -5,6 +5,8 @@ package com.bussiness.curemegptapp.ui.screen.main.chat
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -70,30 +72,6 @@ fun ChatDataScreen(navController: NavHostController,
 
     LaunchedEffect(Unit) {
 
-        Log.d("ChatDataScreen", "-----------------------------")
-
-        Log.d("ChatDataScreen", "chatId: $chatId")
-        Log.d("ChatDataScreen", "familyMemberId: $familyMemberId")
-        Log.d("ChatDataScreen", "type: $type")
-
-        Log.d("ChatDataScreen", "chatMessage: $chatMessage")
-
-        chatMessage?.let {
-            Log.d("ChatDataScreen", "message text: ${it.text}")
-            Log.d("ChatDataScreen", "images size: ${it.images.size}")
-            Log.d("ChatDataScreen", "pdfs size: ${it.pdfs.size}")
-        }
-
-        Log.d("ChatDataScreen", "familyList size: ${familyList.size}")
-
-        familyList.forEachIndexed { index, user ->
-            Log.d(
-                "ChatDataScreen",
-                "User[$index]: id=${user.id}, name=${user.name}, relation=${user.relationship}"
-            )
-        }
-
-        Log.d("ChatDataScreen", "-----------------------------")
     }
 
 

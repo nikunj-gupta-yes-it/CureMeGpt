@@ -34,6 +34,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -48,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -371,6 +373,7 @@ fun BottomMessageBar1(
 
     val context = LocalContext.current
 
+    // FILE PICKER
     val fileLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
@@ -385,10 +388,12 @@ fun BottomMessageBar1(
         }
     }
 
+    // STATES
     var isRecording by remember { mutableStateOf(false) }
     var showText by remember { mutableStateOf(true) }
     var recognizedText by remember { mutableStateOf("") }
 
+    // SPEECH
     val speechRecognizer = remember {
         SpeechRecognizer.createSpeechRecognizer(context)
     }
@@ -404,29 +409,21 @@ fun BottomMessageBar1(
         }
     }
 
+    // PERMISSION
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            recognizedText = ""
+            showText = false
+            speechRecognizer.startListening(intent)
+        }
+    }
+
+    // LISTENER
     DisposableEffect(Unit) {
 
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
-
-            override fun onPartialResults(partialResults: Bundle?) {
-                recognizedText =
-                    partialResults?.getStringArrayList(
-                        SpeechRecognizer.RESULTS_RECOGNITION
-                    )?.firstOrNull() ?: ""
-            }
-
-            override fun onResults(results: Bundle?) {
-                val voiceResult =
-                    results?.getStringArrayList(
-                        SpeechRecognizer.RESULTS_RECOGNITION
-                    )?.firstOrNull() ?: ""
-
-                // ✅ FIX: append voice to message (NO UI CHANGE)
-                viewModel.appendVoiceText(voiceResult)
-
-                isRecording = false
-                showText = true
-            }
 
             override fun onReadyForSpeech(params: Bundle?) {
                 isRecording = true
@@ -436,12 +433,45 @@ fun BottomMessageBar1(
                 isRecording = true
             }
 
+            override fun onPartialResults(partialResults: Bundle?) {
+                val partial =
+                    partialResults?.getStringArrayList(
+                        SpeechRecognizer.RESULTS_RECOGNITION
+                    )?.firstOrNull() ?: ""
+
+                recognizedText = partial
+                viewModel.onMessageChange(partial) // 🔥 LIVE UPDATE
+
+
+
+            }
+
+            override fun onResults(results: Bundle?) {
+                val voiceResult =
+                    results?.getStringArrayList(
+                        SpeechRecognizer.RESULTS_RECOGNITION
+                    )?.firstOrNull() ?: ""
+
+                recognizedText = voiceResult
+                viewModel.onMessageChange(voiceResult)
+
+                isRecording = false
+                showText = true
+            }
+
             override fun onEndOfSpeech() {
                 isRecording = false
+                showText = true
+
+                // 🔥 FALLBACK
+                if (recognizedText.isNotBlank()) {
+                    viewModel.onMessageChange(recognizedText)
+                }
             }
 
             override fun onError(error: Int) {
                 isRecording = false
+                showText = true
             }
 
             override fun onRmsChanged(rmsdB: Float) {}
@@ -455,7 +485,7 @@ fun BottomMessageBar1(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(color = Color.Transparent)
+            .background(Color.Transparent)
             .padding(end = 5.dp)
             .padding(bottom = 8.dp)
     ) {
@@ -475,6 +505,7 @@ fun BottomMessageBar1(
                 verticalAlignment = Alignment.CenterVertically
             ) {
 
+                // ATTACH ICON
                 Icon(
                     painter = painterResource(id = R.drawable.attach_ic),
                     contentDescription = null,
@@ -492,7 +523,7 @@ fun BottomMessageBar1(
 
                 Column {
 
-                    // Attachments preview (UNCHANGED)
+                    // ATTACHMENTS PREVIEW
                     if (state.images.isNotEmpty() || state.pdfs.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(5.dp))
                         InlineAttachmentPreview(
@@ -504,9 +535,62 @@ fun BottomMessageBar1(
                         Spacer(modifier = Modifier.height(6.dp))
                     }
 
+                    // LISTENING UI (UNCHANGED)
                     if (!showText) {
-                        // ✅ SAME UI (no change)
-                        Text("Listening...")
+                      //  Text("Listening...")
+
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+
+                            Text(
+                                text = "See text",
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier
+                                    .padding(bottom = 4.dp)
+                                    .clickable {
+                                        showText = true
+                                    }
+                            )
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFFEDE7F6), RoundedCornerShape(20.dp))
+                                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+
+                                // ❌ CANCEL BUTTON
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_close),
+                                    contentDescription = "Cancel",
+                                    tint = Color.Gray,
+                                    modifier = Modifier
+                                        .size(18.dp)
+                                        .clickable {
+                                            speechRecognizer.stopListening()
+                                            isRecording = false
+                                            showText = true
+                                            recognizedText = ""
+                                        }
+                                )
+
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                // 🌊 WAVEFORM IMAGE (YAHI ADD KIYA HAI)
+                                Image(
+                                    painter = painterResource(id = R.drawable.voice_waveform),
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(30.dp),
+                                    contentScale = ContentScale.FillWidth
+                                )
+                            }
+                        }
+
                     } else {
 
                         TextField(
@@ -535,19 +619,40 @@ fun BottomMessageBar1(
 
             val isMessageEmpty =
                 state.message.isBlank() &&
+                        recognizedText.isBlank() &&
                         state.images.isEmpty() &&
                         state.pdfs.isEmpty()
 
             if (isMessageEmpty) {
 
+                // 🎤 MIC BUTTON
                 IconButton(
                     onClick = {
                         if (!isRecording) {
-                            recognizedText = ""
-                            showText = false
-                            speechRecognizer.startListening(intent)
+
+                            val permission = ContextCompat.checkSelfPermission(
+                                context,
+                                android.Manifest.permission.RECORD_AUDIO
+                            )
+
+                            if (permission == PackageManager.PERMISSION_GRANTED) {
+                                recognizedText = ""
+                                showText = false
+                                speechRecognizer.startListening(intent)
+                            } else {
+                                permissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                            }
+
                         } else {
                             speechRecognizer.stopListening()
+
+                            isRecording = false
+                            showText = true
+
+                            // 🔥 FORCE FINAL TEXT
+                            if (recognizedText.isNotBlank()) {
+                                viewModel.onMessageChange(recognizedText)
+                            }
                         }
                     }
                 ) {
@@ -560,14 +665,14 @@ fun BottomMessageBar1(
 
             } else {
 
+                // 📤 SEND BUTTON
                 IconButton(
                     onClick = {
 
                         val s = viewModel.uiState.value
 
-                        // ✅ FINAL ChatMessage (ALL DATA)
                         val message = ChatMessage(
-                            text = s.message.takeIf { it.isNotBlank() },
+                            text = if (s.message.isNotBlank()) s.message else recognizedText,
                             isUser = true,
                             images = s.images,
                             pdfs = s.pdfs
@@ -575,7 +680,10 @@ fun BottomMessageBar1(
 
                         viewModel.sendMessageFromInput()
 
-                        onSendClicked(message)   // ✅ send full object
+                        onSendClicked(message)
+
+                        recognizedText = ""
+                        showText = true
                     }
                 ) {
                     Icon(
@@ -587,9 +695,6 @@ fun BottomMessageBar1(
             }
         }
     }
-
-
-
 
 }
 

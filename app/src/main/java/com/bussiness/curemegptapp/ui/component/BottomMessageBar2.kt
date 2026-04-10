@@ -79,8 +79,10 @@ fun BottomMessageBar2(
     viewModel: ChatDataViewModel = hiltViewModel(),
     onSendClicked: () -> Unit = {}
 ) {
+
     val context = LocalContext.current
     val profiles by viewModel.profiles.collectAsState()
+
 
     val fileLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
@@ -185,8 +187,8 @@ fun BottomMessageBar2(
     ) {
         ConstraintLayout(
             modifier = Modifier.wrapContentHeight()
-                //.height(290.dp)
-                .fillMaxWidth().padding(horizontal = 10.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp)
         )
         {
             val (chatSection, messageBar, image) = createRefs()
