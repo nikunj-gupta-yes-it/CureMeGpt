@@ -5,6 +5,8 @@ import android.util.Log
 import com.bussiness.curemegptapp.apimodel.OnBoardingModel.OnboardingItem
 import com.bussiness.curemegptapp.apimodel.OnBoardingModel.OnboardingResponse
 import com.bussiness.curemegptapp.apimodel.QuestionAnswer
+import com.bussiness.curemegptapp.apimodel.chatModel.FamilyDetails
+import com.bussiness.curemegptapp.apimodel.chatModel.PromptQuestionResponse
 import com.bussiness.curemegptapp.apimodel.familyProfile.FamilyMemberResponse
 import com.bussiness.curemegptapp.apimodel.getAppointmentList.AppointmentData
 import com.bussiness.curemegptapp.apimodel.getAppointmentList.AppointmentItem
@@ -47,6 +49,7 @@ import org.json.JSONObject
 import retrofit2.Response
 import retrofit2.http.Part
 import javax.inject.Inject
+import kotlin.Int
 import kotlin.collections.get
 
 
@@ -569,19 +572,21 @@ class RepositoryImpl @Inject constructor(
                 val respBody = response.body()
                 if (respBody != null) {
                     if (respBody.has("success") && respBody.get("success").asBoolean) {
+
                         val obj = respBody.get("data").asJsonObject
 
                         val profileResponse = User1(
                             id = obj.get("id")?.asInt ?: 0,
-                            name = obj.get("full_name")?.asString ?: "",
-                            phone = obj.get("contact_number")?.asString ?: "",
-                            email = obj.get("email_address")?.asString ?: "",
-                            dob = obj.get("dob")?.asString ?: "",
-                            gender = obj.get("gender")?.asString ?: "",
-                            height = obj.get("height")?.asString ?: "",
-                            weight = obj.get("weight")?.asString ?: "",
-                            profile_photo = obj.get("profile_photo")?.asString ?: ""
+                            name = obj.getStringSafe("full_name"),
+                            phone = obj.getStringSafe("contact_number"),
+                            email = obj.getStringSafe("email_address"),
+                            dob = obj.getStringSafe("dob"),
+                            gender = obj.getStringSafe("gender"),
+                            height = obj.getStringSafe("height"),
+                            weight = obj.getStringSafe("weight"),
+                            profile_photo = obj.getStringSafe("profile_photo")
                         )
+
                          emit(NetworkResult.Success(profileResponse))
 
                     } else {
@@ -628,9 +633,7 @@ class RepositoryImpl @Inject constructor(
                 val respBody = response.body()
                 if (respBody != null) {
                     if (respBody.has("success") && respBody.get("success").asBoolean) {
-
                         emit(NetworkResult.Success("Profile updated successfully"))
-
                     } else {
                         emit(NetworkResult.Error(respBody.get("message").asString))
                     }
@@ -1702,7 +1705,6 @@ class RepositoryImpl @Inject constructor(
             e.printStackTrace()
             emit(NetworkResult.Error(AppConstant.serverError))
         }
-
     }
 
     override suspend fun deleteFamilyMember(familyMemberId: Int): Flow<NetworkResult<String>> = flow {
@@ -1776,6 +1778,83 @@ class RepositoryImpl @Inject constructor(
                         }
 
                         emit(NetworkResult.Success(list))
+                    } else {
+                        emit(NetworkResult.Error(respBody.get("message").asString))
+                    }
+                } else {
+                    emit(NetworkResult.Error(AppConstant.serverError))
+                }
+            } else {
+                emit(NetworkResult.Error(AppConstant.serverError))
+            }
+        }
+        catch (e: Exception) {
+            e.printStackTrace()
+            emit(NetworkResult.Error(AppConstant.serverError))
+        }
+    }
+
+    override suspend fun getChatResponse(
+        familyMemberId: RequestBody?, message: RequestBody, type: RequestBody,
+        chatId: RequestBody?, profile_image: MultipartBody.Part?
+    ) : Flow<NetworkResult<String>> = flow {
+        try {
+            val response = api.getChatResponse(familyMemberId,message,type,chatId,profile_image)
+            if (response.isSuccessful) {
+                val respBody = response.body()
+                if (respBody != null) {
+                    if (respBody.has("success") && respBody.get("success").asBoolean) {
+                        val dataObj = respBody.getAsJsonObject("data")
+                        if (dataObj != null && dataObj.has("message")) {
+                            val message = dataObj.get("message").asString
+                            emit(NetworkResult.Success(message))
+                        } else {
+                            emit(NetworkResult.Error("Message not found in data"))
+                        }
+                    //  emit(NetworkResult.Success(respBody.get("message").asString))
+                    } else {
+                        emit(NetworkResult.Error(respBody.get("message").asString))
+                    }
+                } else {
+                    emit(NetworkResult.Error(AppConstant.serverError))
+                }
+            } else {
+                emit(NetworkResult.Error(AppConstant.serverError))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emit(NetworkResult.Error(AppConstant.serverError))
+        }
+    }
+
+    override suspend fun getPromptQuestions(): Flow<NetworkResult<PromptQuestionResponse>> = flow {
+        try {
+            val response = api.getPromptQuestions()
+            if (response.isSuccessful) {
+                val respBody = response.body()
+                if (respBody != null) {
+                    if (respBody.has("success") && respBody.get("success").asBoolean) {
+                        val dataObj = respBody.getAsJsonObject("data")
+                        if (dataObj != null ) {
+                            val promptQuestion = Gson().fromJson(dataObj, PromptQuestionResponse::class.java)
+                            val userDetails = dataObj.get("userDetails").asJsonObject
+                            val family = FamilyDetails(
+                                id = userDetails.get("id").asInt,
+                                name = userDetails.get("name").asString,
+                                relationship = "Myself",
+                                profile_photo = null
+                            )
+                            val updatedFamilyList = listOf(family) + promptQuestion.family_details
+                            val updatedResponse = promptQuestion.copy(
+                                family_details = updatedFamilyList
+                            )
+                            emit(NetworkResult.Success(updatedResponse))
+                        }
+                        else {
+                              emit(NetworkResult.Error("Message not found in data"))
+                        }
+
+                        //  emit(NetworkResult.Success(respBody.get("message").asString))
                     } else {
                         emit(NetworkResult.Error(respBody.get("message").asString))
                     }

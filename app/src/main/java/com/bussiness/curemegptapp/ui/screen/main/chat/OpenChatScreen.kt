@@ -1,5 +1,6 @@
 package com.bussiness.curemegptapp.ui.screen.main.chat
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -73,47 +74,66 @@ import com.bussiness.curemegptapp.ui.theme.gradientBrush
 import com.bussiness.curemegptapp.ui.viewModel.main.ChatViewModel
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.imePadding
-
+import com.bussiness.curemegptapp.apimodel.chatModel.FamilyDetails
+import com.bussiness.curemegptapp.ui.viewModel.main.PromptViewModel
+import java.util.Calendar
 
 @Composable
-fun OpenChatScreen(navController: NavHostController,from: String ?= "",) {
+fun OpenChatScreen(navController: NavHostController,from: String ?= "",
+                   viewModel : PromptViewModel = hiltViewModel()
+                   ) {
+
     var showMenu by remember { mutableStateOf(false) }
-   // val uiState by viewModel.uiState.collectAsState()
-    var selectedUser by remember { mutableStateOf("James (Myself)") }
+    var selectedUser by remember { mutableStateOf<FamilyDetails?>(null) }
     var showUserDropdown by remember { mutableStateOf(false) }
     var showCaseDialog by remember { mutableStateOf(false) }
+
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    val users = listOf(
-        "James (Myself)",
-        "Rose Logan (Spouse)",
-        "Peter Logan (Son)"
-    )
+
     val chatViewModel: ChatViewModel = hiltViewModel()
     val chatInputState by chatViewModel.uiState.collectAsState()
-    val messages by chatViewModel.messages.collectAsState() // ये add करें
-    // Navigation trigger state
+    val messages by chatViewModel.messages.collectAsState()
+
     var shouldNavigate by remember { mutableStateOf(false) }
 
-    BackHandler {
-        if (from=="auth") {
-            navController.navigate(AppDestination.MainScreen) {
-                popUpTo(0)
-                launchSingleTop = true
-            }
-        }else{
-            navController.navigate(AppDestination.Home) {
-                popUpTo(0)
-                launchSingleTop = true
-            }
-        }
 
+    val response by viewModel.promptQuestions.collectAsState()
+    val familyList = response.family_details
+    val questionsList = response.prompt_questions
+    fun getGreeting(): String {
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+
+        return when (hour) {
+            in 0..11 -> "Good Morning"
+            in 12..16 -> "Good Afternoon"
+            in 17..20 -> "Good Evening"
+            else -> "Good Night"
+        }
     }
 
-    // Track when a new message is sent
+    val greeting = remember { getGreeting() }
+
+
+    LaunchedEffect(familyList) {
+        if (familyList.isNotEmpty() && selectedUser == null) {
+            selectedUser = familyList.first()
+        }
+    }
+
+
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty() && shouldNavigate) {
-            // Navigate to chat detail screen
+
+            val handle = navController.currentBackStackEntry?.savedStateHandle
+            val hasMyself = selectedUser?.name?.contains("(Myself)")
+
+            handle?.set("chatId", 0)
+            handle?.set("familyMemberId", if(hasMyself == true) 0 else selectedUser?.id ?: 0)
+            handle?.set("textMessage", viewModel.getMessage())
+            handle?.set("type", "normal")
+            handle?.set("familyList", familyList)
+
             navController.navigate(AppDestination.ChatDataScreen) {
                 popUpTo("openChatScreen") { saveState = true }
                 launchSingleTop = true
@@ -123,72 +143,21 @@ fun OpenChatScreen(navController: NavHostController,from: String ?= "",) {
         }
     }
 
-
-
-    // Define questions for each user
-    val userQuestionsMap = mapOf(
-        "James (Myself)" to Pair(
-            // Suggested Questions for James
-            listOf(
-                "Why do my teeth hurt when I drink something cold?",
-                "What's the best way to treat bleeding gums at home?",
-                "Do I need to remove my wisdom tooth if it hurts?",
-                "Why do I keep getting frequent headaches?",
-                "How can I tell if my stomach pain is serious?",
-                "What should I do if I feel dizzy often?"
-            ),
-            // Fitness Questions for James
-            listOf(
-                "Get fit question 1?",
-                "Get fit question 2?",
-                "Get fit question 3?"
-            )
-        ),
-        "Rose Logan (Spouse)" to Pair(
-            // Suggested Questions for Rose
-            listOf(
-                "What are common symptoms of migraines in women?",
-                "How to manage back pain during pregnancy?",
-                "Best exercises for postpartum recovery?",
-                "Diet tips for improving skin health?",
-                "How to improve sleep quality naturally?",
-                "Managing stress and anxiety effectively?"
-            ),
-            // Fitness Questions for Rose
-            listOf(
-                "Postpartum fitness routine?",
-                "Yoga for stress relief?",
-                "Healthy meal planning?"
-            )
-        ),
-        "Peter Logan (Son)" to Pair(
-            // Suggested Questions for Peter
-            listOf(
-                "Common childhood allergies and symptoms?",
-                "Best nutrition for growing children?",
-                "How to boost immune system naturally?",
-                "Managing childhood asthma?",
-                "Healthy screen time limits for kids?",
-                "When to consult doctor for fever in children?"
-            ),
-            // Fitness Questions for Peter
-            listOf(
-                "Fun exercises for kids?",
-                "Building healthy habits early?",
-                "Outdoor activities for children?"
-            )
-        )
-    )
-
-    // Get questions based on selected user
-    val (suggestedQuestions, fitnessQuestions) = userQuestionsMap[selectedUser] ?: Pair(
-        listOf("No questions available"),
-        listOf("No fitness questions available")
-    )
-
-
     var showDrawer by remember { mutableStateOf(false) }
 
+    BackHandler {
+        if (from == "auth") {
+            navController.navigate(AppDestination.MainScreen) {
+                popUpTo(0)
+                launchSingleTop = true
+            }
+        } else {
+            navController.navigate(AppDestination.Home) {
+                popUpTo(0)
+                launchSingleTop = true
+            }
+        }
+    }
 
     RightSideDrawer(
         drawerState = showDrawer,
@@ -197,11 +166,8 @@ fun OpenChatScreen(navController: NavHostController,from: String ?= "",) {
         drawerContent = {
             MenuDrawer(
                 onDismiss = { showDrawer = false },
-                selectedUser = selectedUser,
-                onUserChange = {
-                    selectedUser = it
-                    showDrawer = false
-                },
+                selectedUser = selectedUser?.name ?: "",
+                onUserChange = {},
                 onClickNewCaseChat = {
                     showCaseDialog = true
                 }
@@ -209,39 +175,40 @@ fun OpenChatScreen(navController: NavHostController,from: String ?= "",) {
         }
     ) {
 
-            Box(modifier = Modifier.fillMaxSize()) {
-                Column(
-                    modifier = Modifier.fillMaxSize().statusBarsPadding()
-                        .padding(horizontal = 20.dp)
-                ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .padding(horizontal = 20.dp)
+            ) {
 
-
-                    AIChatHeader(
-                        logoRes = R.drawable.ic_logo,
-                        sideArrow = R.drawable.left_ic,
-                        filterIcon = R.drawable.filter_ic,
-                        onLeftIconClick = {      if (from=="auth") {
+                AIChatHeader(
+                    logoRes = R.drawable.ic_logo,
+                    sideArrow = R.drawable.left_ic,
+                    filterIcon = R.drawable.filter_ic,
+                    onLeftIconClick = {
+                        if (from == "auth") {
                             navController.navigate(AppDestination.MainScreen) {
                                 popUpTo(0)
                                 launchSingleTop = true
                             }
-                        }else{
+                        } else {
                             navController.navigate(AppDestination.Home) {
                                 popUpTo(0)
                                 launchSingleTop = true
                             }
                         }
-                        },
-                        onFilterClick = { showDrawer = true },
-                    )
+                    },
+                    onFilterClick = { showDrawer = true },
+                )
 
-                    Column(
-                        modifier = Modifier.fillMaxSize().imePadding()
-                    ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .imePadding()
+                ) {
 
-
-
-                    // Main Content
                     LazyColumn(
                         modifier = Modifier
                             .weight(1f)
@@ -251,230 +218,168 @@ fun OpenChatScreen(navController: NavHostController,from: String ?= "",) {
                         item {
                             Spacer(modifier = Modifier.height(32.dp))
 
-                            // Logo
                             Image(
                                 painter = painterResource(R.drawable.main_ic),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .wrapContentSize()
-                                    .align(Alignment.CenterHorizontally)
+                                contentDescription = null
                             )
 
                             Spacer(modifier = Modifier.height(24.dp))
 
-                            // Greeting
                             Row {
+                                Text("$greeting, ")
                                 Text(
-                                    text = "Good afternoon, ",
-                                    fontSize = 21.sp,
-                                    fontFamily = FontFamily(Font(R.font.urbanist_medium)),
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Text(
-                                    text = "James",
-                                    fontSize = 21.sp,
-                                    fontFamily = FontFamily(Font(R.font.urbanist_medium)),
-                                    fontWeight = FontWeight.Medium,
+                                    text = selectedUser?.name ?: "",
                                     color = Color(0xFF4338CA)
                                 )
                             }
 
                             Spacer(modifier = Modifier.height(24.dp))
 
-                            // User Selector
-                            Surface(
-                                modifier = Modifier
-                                    .fillMaxWidth().padding(horizontal = 10.dp)
-                                    .clickable(interactionSource = remember { MutableInteractionSource() },
-                                        indication = null) { showUserDropdown = !showUserDropdown },
-                                shape = RoundedCornerShape(30.dp),
-                                color = Color(0xFFF0EDFF),
-
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(6.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
+                            // ✅ FIXED: UI for "Ask for" and Dropdown
+                            Column(modifier = Modifier.padding(horizontal = 10.dp)) {
+                                Surface(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { showUserDropdown = !showUserDropdown },
+                                    shape = RoundedCornerShape(30.dp),
+                                    color = Color(0xFFF0EDFF),
                                 ) {
                                     Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        modifier = Modifier.padding(6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Image(
-                                            painter = painterResource(R.drawable.ic_chat_circle_person_icon),
-                                            contentDescription = null,
-                                            modifier = Modifier.wrapContentSize()
+                                        // LEFT SIDE
+                                        Row(
+                                            modifier = Modifier.padding(6.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Image(
+                                                painter = painterResource(R.drawable.ic_chat_circle_person_icon),
+                                                contentDescription = null
+                                            )
+                                            Text(
+                                                text = "Ask for:",
+                                                fontWeight = FontWeight.Medium,
+                                                fontSize = 14.sp
+                                            )
+                                        }
+
+                                        // MIDDLE
+                                        Text(
+                                            text = selectedUser?.let { "${it.name} (${it.relationship})" } ?: "",
+                                            color = Color(0xFF5B47DB),
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            modifier = Modifier
+                                                .padding(start = 16.dp)
+                                                .weight(1f)
                                         )
-                                        Text("Ask for:", fontWeight = FontWeight.Medium, fontSize = 14.sp,)
 
+                                        // RIGHT SIDE ICON
+                                        Image(
+                                            painter = painterResource(
+                                                if (showUserDropdown) R.drawable.ic_dropdown_show
+                                                else R.drawable.ic_dropdown_icon
+                                            ),
+                                            contentDescription = null,
+                                            modifier = Modifier.padding(end = 6.dp)
+                                        )
                                     }
-
-                                    Text(
-                                        selectedUser,
-                                        color = Color(0xFF5B47DB),
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Image(
-
-                                        painter = painterResource(
-                                            if (showUserDropdown) R.drawable.ic_dropdown_show
-                                            else R.drawable.ic_dropdown_icon
-                                        ),
-                                        contentDescription = null,
-                                        modifier = Modifier.padding(end = 6.dp)
-                                    )
                                 }
-                            }
 
-
-                            if (showUserDropdown) {
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth().padding(horizontal = 5.dp)
-                                        .wrapContentHeight(),
-                                    shape = RoundedCornerShape(16.dp),
-                                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-                                ) {
-                                    Column(
-                                        modifier = Modifier.padding(vertical = 8.dp)
-                                    ) {
-                                        users.forEachIndexed { index, user ->
-
-                                            Box(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .height(44.dp)
-                                                    .clickable(interactionSource = remember { MutableInteractionSource() },
-                                                        indication = null
-                                                    ) {
-
-                                                        selectedUser = user
-                                                        showUserDropdown = false
-                                                    }
-                                                    .padding(horizontal = 16.dp)
-                                            ) {
-                                                Row(
-                                                    modifier = Modifier.fillMaxSize(),
-                                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                                    verticalAlignment = Alignment.CenterVertically
+                                // ✅ DROPDOWN
+                                if (showUserDropdown) {
+                                    Card(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                                        Column {
+                                            familyList.forEach { user ->
+                                                Box(
+                                                    modifier = Modifier
+                                                        .fillMaxWidth()
+                                                        .clickable {
+                                                            selectedUser = user
+                                                            showUserDropdown = false
+                                                        }
+                                                        .padding(16.dp)
                                                 ) {
-                                                    // User name with proper styling
-                                                    Text(
-                                                        text = user,
-                                                        fontSize = 16.sp,
-                                                        fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-                                                        fontWeight = if (user == selectedUser) FontWeight.Medium else FontWeight.Normal,
-                                                        color = if (user == selectedUser) Color(0xFF4338CA) else Color(0xFF374151)
-                                                    )
-
-                                                    // Tick icon only for selected user
-                                                    if (user == selectedUser) {
-                                                        Image(
-                                                            painter = painterResource(id = R.drawable.ic_tick_icon),
-                                                            contentDescription = "Selected",
-                                                            modifier = Modifier.size(20.dp)
-                                                        )
+                                                    Row(
+                                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    ) {
+                                                        Text(text = "${user.name} (${user.relationship})")
+                                                        if (user == selectedUser) {
+                                                            Image(
+                                                                painter = painterResource(R.drawable.ic_tick_icon),
+                                                                contentDescription = null
+                                                            )
+                                                        }
                                                     }
                                                 }
                                             }
-
                                         }
                                     }
                                 }
                             }
 
                             Spacer(modifier = Modifier.height(16.dp))
+
                             GradientRedButton(
                                 text = "New Case Chat",
                                 icon = R.drawable.page_img,
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp),
                                 height = 56.dp,
                                 fontSize = 14.sp,
                                 imageSize = 16.dp,
-                                gradientColors = listOf(
-                                    Color(0xFF4338CA),
-                                    Color(0xFF211C64)
-                                ),
-                                onClick = {
-
-                                    showCaseDialog = true
-                                }
+                                gradientColors = listOf(Color(0xFF4338CA), Color(0xFF211C64)),
+                                onClick = { showCaseDialog = true }
                             )
 
                             Spacer(modifier = Modifier.height(24.dp))
-                        }
+                        } // End of First Item
 
-                        // Suggested Questions
-                        items(suggestedQuestions) { question ->
-                            QuestionCard(question = question, isHealthQuestion = true, onClick = {
-                                navController.navigate(AppDestination.ChatDataScreen) {
-                                    popUpTo("openChatScreen") { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
+                        // ✅ FIXED: items() call is now OUTSIDE the item {} block
+                        items(questionsList) { question ->
+                            QuestionCard(
+                                question = question.question,
+                                isHealthQuestion = true,
+                                onClick = {
+                                    navController.navigate(AppDestination.ChatDataScreen)
                                 }
-                            })
-                            Spacer(modifier = Modifier.height(12.dp))
-                        }
-
-                        // Fitness Questions
-                        items(fitnessQuestions) { question ->
-                            QuestionCard(question = question, isHealthQuestion = false, onClick = {
-                                navController.navigate(AppDestination.ChatDataScreen) {
-                                    popUpTo("openChatScreen") { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            })
+                            )
                             Spacer(modifier = Modifier.height(12.dp))
                         }
 
                         item {
                             Spacer(modifier = Modifier.height(16.dp))
                         }
-
-
                     }
 
-
-                    BottomMessageBar1(
-                        modifier = Modifier
-                            .fillMaxWidth().background(color = Color.Transparent)
-                            .padding(horizontal = 0.dp).padding(bottom = 10.dp),
-                        state = chatInputState,
-                        viewModel = chatViewModel,
-                        onSendClicked = {
-                            // When send button is clicked, trigger navigation
-                            shouldNavigate = true
-                        }
-                    )
-
+                        BottomMessageBar1(
+                            modifier = Modifier.fillMaxWidth(),
+                            state = chatInputState,
+                            viewModel = chatViewModel,
+                            onSendClicked = { chatMessage ->
+                                viewModel.setMessage(chatMessage)
+                                shouldNavigate = true
+                            }
+                        )
                     }
                 }
 
-
-
-                // Case Dialog
+                // ✅ CASE DIALOG
                 if (showCaseDialog) {
                     CaseDialog(
                         onDismiss = { showCaseDialog = false },
                         onConfirm = {
-                            navController.navigate(AppDestination.ChatDataScreen) {
-                                popUpTo("openChatScreen") { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                            selectedUser = "Rose Logan (Spouse)"
+                            navController.navigate(AppDestination.ChatDataScreen)
+                            selectedUser = familyList.firstOrNull()
                             showCaseDialog = false
                         }
                     )
                 }
             }
         }
-
-}
+    }
 
 
 @Composable
@@ -489,8 +394,8 @@ fun QuestionCard(question: String, isHealthQuestion: Boolean,onClick:()->Unit) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(interactionSource = remember { MutableInteractionSource() },
-                    indication = null) { }
+//                .clickable(interactionSource = remember { MutableInteractionSource() },
+//                    indication = null) { }
                 .padding(16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.Top
@@ -523,3 +428,411 @@ fun OpenChatScreenPreview() {
     OpenChatScreen(navController = navController)
 }
 
+//    var showMenu by remember { mutableStateOf(false) }
+//   // val uiState by viewModel.uiState.collectAsState()
+//    var selectedUser by remember { mutableStateOf("James (Myself)") }
+//    var showUserDropdown by remember { mutableStateOf(false) }
+//    var showCaseDialog by remember { mutableStateOf(false) }
+//    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+//    val scope = rememberCoroutineScope()
+//    val users = listOf(
+//        "James (Myself)",
+//        "Rose Logan (Spouse)",
+//        "Peter Logan (Son)"
+//    )
+//    val chatViewModel: ChatViewModel = hiltViewModel()
+//    val chatInputState by chatViewModel.uiState.collectAsState()
+//    val messages by chatViewModel.messages.collectAsState() // ये add करें
+//    // Navigation trigger state
+//    var shouldNavigate by remember { mutableStateOf(false) }
+//
+//    Log.d("ChatScreen", "User is on  Open Chat Screen")
+//
+//
+//
+//    // Track when a new message is sent
+//    LaunchedEffect(messages.size) {
+//        if (messages.isNotEmpty() && shouldNavigate) {
+//            // Navigate to chat detail screen
+//            navController.navigate(AppDestination.ChatDataScreen) {
+//                popUpTo("openChatScreen") { saveState = true }
+//                launchSingleTop = true
+//                restoreState = true
+//            }
+//            shouldNavigate = false
+//        }
+//    }
+//
+//
+//
+//    // Define questions for each user
+//    val userQuestionsMap = mapOf(
+//        "James (Myself)" to Pair(
+//            // Suggested Questions for James
+//            listOf(
+//                "Why do my teeth hurt when I drink something cold?",
+//                "What's the best way to treat bleeding gums at home?",
+//                "Do I need to remove my wisdom tooth if it hurts?",
+//                "Why do I keep getting frequent headaches?",
+//                "How can I tell if my stomach pain is serious?",
+//                "What should I do if I feel dizzy often?"
+//            ),
+//            // Fitness Questions for James
+//            listOf(
+//                "Get fit question 1?",
+//                "Get fit question 2?",
+//                "Get fit question 3?"
+//            )
+//        ),
+//        "Rose Logan (Spouse)" to Pair(
+//            // Suggested Questions for Rose
+//            listOf(
+//                "What are common symptoms of migraines in women?",
+//                "How to manage back pain during pregnancy?",
+//                "Best exercises for postpartum recovery?",
+//                "Diet tips for improving skin health?",
+//                "How to improve sleep quality naturally?",
+//                "Managing stress and anxiety effectively?"
+//            ),
+//            // Fitness Questions for Rose
+//            listOf(
+//                "Postpartum fitness routine?",
+//                "Yoga for stress relief?",
+//                "Healthy meal planning?"
+//            )
+//        ),
+//        "Peter Logan (Son)" to Pair(
+//            // Suggested Questions for Peter
+//            listOf(
+//                "Common childhood allergies and symptoms?",
+//                "Best nutrition for growing children?",
+//                "How to boost immune system naturally?",
+//                "Managing childhood asthma?",
+//                "Healthy screen time limits for kids?",
+//                "When to consult doctor for fever in children?"
+//            ),
+//            // Fitness Questions for Peter
+//            listOf(
+//                "Fun exercises for kids?",
+//                "Building healthy habits early?",
+//                "Outdoor activities for children?"
+//            )
+//        )
+//    )
+//
+//    // Get questions based on selected user
+//    val (suggestedQuestions, fitnessQuestions) = userQuestionsMap[selectedUser] ?: Pair(
+//        listOf("No questions available"),
+//        listOf("No fitness questions available")
+//    )
+//
+//
+//
+//    val response by viewModel.promptQuestions.collectAsState()
+//
+//    val familyList = response.family_details
+//    val questionsList = response.prompt_questions
+//
+//
+//    var showDrawer by remember { mutableStateOf(false) }
+//    BackHandler {
+//        if (from=="auth") {
+//            navController.navigate(AppDestination.MainScreen) {
+//                popUpTo(0)
+//                launchSingleTop = true
+//            }
+//        }else{
+//            navController.navigate(AppDestination.Home) {
+//                popUpTo(0)
+//                launchSingleTop = true
+//            }
+//        }
+//
+//    }
+//
+//
+//    RightSideDrawer(
+//        drawerState = showDrawer,
+//        onClose = { showDrawer = false },
+//        drawerWidth = 320.dp,
+//        drawerContent = {
+//            MenuDrawer(
+//                onDismiss = { showDrawer = false },
+//                selectedUser = selectedUser,
+//                onUserChange = {
+//                    selectedUser = it
+//                    showDrawer = false
+//                },
+//                onClickNewCaseChat = {
+//                    showCaseDialog = true
+//                }
+//            )
+//        }
+//    ) {
+//
+//            Box(modifier = Modifier.fillMaxSize()) {
+//                Column(
+//                    modifier = Modifier.fillMaxSize().statusBarsPadding()
+//                        .padding(horizontal = 20.dp)
+//                ) {
+//
+//
+//                    AIChatHeader(
+//                        logoRes = R.drawable.ic_logo,
+//                        sideArrow = R.drawable.left_ic,
+//                        filterIcon = R.drawable.filter_ic,
+//                        onLeftIconClick = {      if (from=="auth") {
+//                            navController.navigate(AppDestination.MainScreen) {
+//                                popUpTo(0)
+//                                launchSingleTop = true
+//                            }
+//                        }else{
+//                            navController.navigate(AppDestination.Home) {
+//                                popUpTo(0)
+//                                launchSingleTop = true
+//                            }
+//                        }
+//                        },
+//                        onFilterClick = { showDrawer = true },
+//                    )
+//
+//                    Column(
+//                        modifier = Modifier.fillMaxSize().imePadding()
+//                    ) {
+//
+//
+//
+//                    // Main Content
+//                    LazyColumn(
+//                        modifier = Modifier
+//                            .weight(1f)
+//                            .fillMaxWidth(),
+//                        horizontalAlignment = Alignment.CenterHorizontally
+//                    ) {
+//                        item {
+//                            Spacer(modifier = Modifier.height(32.dp))
+//
+//                            // Logo
+//                            Image(
+//                                painter = painterResource(R.drawable.main_ic),
+//                                contentDescription = null,
+//                                modifier = Modifier
+//                                    .wrapContentSize()
+//                                    .align(Alignment.CenterHorizontally)
+//                            )
+//
+//                            Spacer(modifier = Modifier.height(24.dp))
+//
+//                            // Greeting
+//                            Row {
+//                                Text(
+//                                    text = "Good afternoon, ",
+//                                    fontSize = 21.sp,
+//                                    fontFamily = FontFamily(Font(R.font.urbanist_medium)),
+//                                    fontWeight = FontWeight.Medium
+//                                )
+//                                Text(
+//                                    text = "James",
+//                                    fontSize = 21.sp,
+//                                    fontFamily = FontFamily(Font(R.font.urbanist_medium)),
+//                                    fontWeight = FontWeight.Medium,
+//                                    color = Color(0xFF4338CA)
+//                                )
+//                            }
+//
+//                            Spacer(modifier = Modifier.height(24.dp))
+//
+//                            // User Selector
+//                            Surface(
+//                                modifier = Modifier
+//                                    .fillMaxWidth().padding(horizontal = 10.dp)
+//                                    .clickable(interactionSource = remember { MutableInteractionSource() },
+//                                        indication = null) { showUserDropdown = !showUserDropdown },
+//                                shape = RoundedCornerShape(30.dp),
+//                                color = Color(0xFFF0EDFF),
+//
+//                            ) {
+//                                Row(
+//                                    modifier = Modifier.padding(6.dp),
+//                                    verticalAlignment = Alignment.CenterVertically,
+//                                    horizontalArrangement = Arrangement.SpaceBetween
+//                                ) {
+//                                    Row(
+//                                        verticalAlignment = Alignment.CenterVertically,
+//                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+//                                    ) {
+//                                        Image(
+//                                            painter = painterResource(R.drawable.ic_chat_circle_person_icon),
+//                                            contentDescription = null,
+//                                            modifier = Modifier.wrapContentSize()
+//                                        )
+//                                        Text("Ask for:", fontWeight = FontWeight.Medium, fontSize = 14.sp,)
+//
+//                                    }
+//
+//                                    Text(
+//                                        selectedUser,
+//                                        color = Color(0xFF5B47DB),
+//                                        fontSize = 14.sp,
+//                                        fontWeight = FontWeight.Medium
+//                                    )
+//                                    Spacer(Modifier.width(4.dp))
+//                                    Image(
+//
+//                                        painter = painterResource(
+//                                            if (showUserDropdown) R.drawable.ic_dropdown_show
+//                                            else R.drawable.ic_dropdown_icon
+//                                        ),
+//                                        contentDescription = null,
+//                                        modifier = Modifier.padding(end = 6.dp)
+//                                    )
+//                                }
+//                            }
+//
+//
+//                            if (showUserDropdown) {
+//                                Card(
+//                                    modifier = Modifier
+//                                        .fillMaxWidth().padding(horizontal = 5.dp)
+//                                        .wrapContentHeight(),
+//                                    shape = RoundedCornerShape(16.dp),
+//                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+//                                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+//                                ) {
+//                                    Column(
+//                                        modifier = Modifier.padding(vertical = 8.dp)
+//                                    ) {
+//                                        users.forEachIndexed { index, user ->
+//
+//                                            Box(
+//                                                modifier = Modifier
+//                                                    .fillMaxWidth()
+//                                                    .height(44.dp)
+//                                                    .clickable(interactionSource = remember { MutableInteractionSource() },
+//                                                        indication = null
+//                                                    ) {
+//
+//                                                        selectedUser = user
+//                                                        showUserDropdown = false
+//                                                    }
+//                                                    .padding(horizontal = 16.dp)
+//                                            ) {
+//                                                Row(
+//                                                    modifier = Modifier.fillMaxSize(),
+//                                                    horizontalArrangement = Arrangement.SpaceBetween,
+//                                                    verticalAlignment = Alignment.CenterVertically
+//                                                ) {
+//                                                    // User name with proper styling
+//                                                    Text(
+//                                                        text = user,
+//                                                        fontSize = 16.sp,
+//                                                        fontFamily = FontFamily(Font(R.font.urbanist_regular)),
+//                                                        fontWeight = if (user == selectedUser) FontWeight.Medium else FontWeight.Normal,
+//                                                        color = if (user == selectedUser) Color(0xFF4338CA) else Color(0xFF374151)
+//                                                    )
+//
+//                                                    // Tick icon only for selected user
+//                                                    if (user == selectedUser) {
+//                                                        Image(
+//                                                            painter = painterResource(id = R.drawable.ic_tick_icon),
+//                                                            contentDescription = "Selected",
+//                                                            modifier = Modifier.size(20.dp)
+//                                                        )
+//                                                    }
+//                                                }
+//                                            }
+//
+//                                        }
+//                                    }
+//                                }
+//                            }
+//
+//                            Spacer(modifier = Modifier.height(16.dp))
+//                            GradientRedButton(
+//                                text = "New Case Chat",
+//                                icon = R.drawable.page_img,
+//                                modifier = Modifier.fillMaxWidth(),
+//                                height = 56.dp,
+//                                fontSize = 14.sp,
+//                                imageSize = 16.dp,
+//                                gradientColors = listOf(
+//                                    Color(0xFF4338CA),
+//                                    Color(0xFF211C64)
+//                                ),
+//                                onClick = {
+//
+//                                    showCaseDialog = true
+//                                }
+//                            )
+//
+//                            Spacer(modifier = Modifier.height(24.dp))
+//                        }
+//
+//                        // Suggested Questions
+//                        items(suggestedQuestions) { question ->
+//                            QuestionCard(question = question, isHealthQuestion = true, onClick = {
+//                                navController.navigate(AppDestination.ChatDataScreen) {
+//                                    popUpTo("openChatScreen") { saveState = true }
+//                                    launchSingleTop = true
+//                                    restoreState = true
+//                                }
+//                            })
+//                            Spacer(modifier = Modifier.height(12.dp))
+//                        }
+//
+//                        // Fitness Questions
+//                        items(fitnessQuestions) { question ->
+//                            QuestionCard(question = question, isHealthQuestion = false, onClick = {
+//                                navController.navigate(AppDestination.ChatDataScreen) {
+//                                    popUpTo("openChatScreen") { saveState = true }
+//                                    launchSingleTop = true
+//                                    restoreState = true
+//                                }
+//                            })
+//                            Spacer(modifier = Modifier.height(12.dp))
+//                        }
+//
+//                        item {
+//                            Spacer(modifier = Modifier.height(16.dp))
+//                        }
+//
+//
+//                    }
+//
+//
+//                    BottomMessageBar1(
+//                        modifier = Modifier
+//                            .fillMaxWidth().background(color = Color.Transparent)
+//                            .padding(horizontal = 0.dp).padding(bottom = 10.dp),
+//                        state = chatInputState,
+//                        viewModel = chatViewModel,
+//                        onSendClicked = {
+//                            // When send button is clicked, trigger navigation
+//                            shouldNavigate = true
+//                        }
+//                    )
+//
+//                    }
+//                }
+//
+//
+//
+//                // Case Dialog
+//                if (showCaseDialog) {
+//                    CaseDialog(
+//                        onDismiss = { showCaseDialog = false },
+//                        onConfirm = {
+//                            navController.navigate(AppDestination.ChatDataScreen) {
+//                                popUpTo("openChatScreen") { saveState = true }
+//                                launchSingleTop = true
+//                                restoreState = true
+//                            }
+//                            selectedUser = "Rose Logan (Spouse)"
+//                            showCaseDialog = false
+//                        }
+//                    )
+//                }
+//            }
+//        }
+//
+//}

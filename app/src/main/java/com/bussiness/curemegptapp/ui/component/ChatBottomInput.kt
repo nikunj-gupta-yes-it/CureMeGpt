@@ -48,7 +48,6 @@ fun BottomMessageBar(
 ) {
     val context = LocalContext.current
 
-    // Pickers
     val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         uri?.let { viewModel.addImage(it) }
     }
@@ -142,50 +141,11 @@ fun BottomMessageBar(
                 IconButton(onClick = { viewModel.sendMessageFromInput() }) {
                     Icon(painterResource(R.drawable.send_ic), contentDescription = "Send", tint = Color.Unspecified, modifier = Modifier.wrapContentSize())
                 }
-            } else {
+            }
+            else {
                 IconButton(onClick = { viewModel.sendMessageFromInput() }) {
                     Icon(painterResource(R.drawable.voiceinc_ic), contentDescription = "Send", tint = Color.Unspecified, modifier = Modifier.wrapContentSize())
                 }
-//                IconButton(onClick = {
-//                    // request permission if needed then start
-//                    val hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-//                    if (!hasPermission) {
-//                        recordPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-//                        return@IconButton
-//                    }
-//
-//                    if (!state.isRecording) {
-//                        // create manager and start
-//                        speechMgr = SpeechRecognizerManager(
-//                            context = context,
-//                            onPartialResult = { partial ->
-//                                // show partial transcription in input
-//                                viewModel.onMessageChange(partial)
-//                            },
-//                            onFinalResult = { final ->
-//                                viewModel.onMessageChange(final)
-//                                viewModel.stopRecording()
-//                                // optionally auto-send
-//                                // viewModel.sendMessageFromInput()
-//                            },
-//                            onError = { error ->
-//                                // log or show snackbar
-//                            }
-//                        ).also { it.startListening() }
-//                        viewModel.toggleRecording()
-//                    } else {
-//                        // stop
-//                        speechMgr?.stopListening()
-//                        viewModel.stopRecording()
-//                    }
-//                }) {
-//                    if (state.isRecording) {
-////                                Image(painter = painterResource(R.drawable.ic_mic_off), contentDescription = "Mic", modifier = Modifier.size(24.dp))
-//                    } else {
-////                                Icon(Icons.Default.Mic, contentDescription = "Mic")
-//                    }
-//                }
-
             }
         }
     }

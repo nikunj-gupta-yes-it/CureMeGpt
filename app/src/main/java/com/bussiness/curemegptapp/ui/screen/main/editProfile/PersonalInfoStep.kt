@@ -83,7 +83,8 @@ fun PersonalInfoStep(
                 viewModel.updateField {
                     copy(dateOfBirth = it.toString())
                 }
-            }
+            },
+            allowFutureDates = false
         )
     }
 
@@ -243,7 +244,7 @@ fun PersonalInfoStep(
         ProfileInputField(
             label = stringResource(R.string.contact_number_label),
             placeholder = stringResource(R.string.contact_number_placeholder),
-            value = profile.contactNumber,
+            value = profile.phoneCopy,
             keyboardType = KeyboardType.Phone,
 
             onValueChange = {
@@ -275,7 +276,7 @@ fun PersonalInfoStep(
         ProfileInputField(
             label = stringResource(R.string.email_label),
             placeholder = stringResource(R.string.email_placeholder),
-            value = profile.email,
+            value = profile.emailCopy,
             keyboardType = KeyboardType.Email,
             onValueChange = {
                 viewModel.onEmailChange(it)

@@ -1,5 +1,6 @@
 package com.bussiness.curemegptapp.ui.screen.main.ChatAI
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +31,7 @@ import com.bussiness.curemegptapp.ui.viewModel.main.ChatViewModel
 fun AIChatScreen(navController: NavHostController) {
     val viewModel: ChatViewModel = hiltViewModel()
     val uiState = viewModel.uiState.collectAsState()
+    Log.d("ChatScreen", "User is on Ai chat screen")
     Column(
         modifier = Modifier
             .fillMaxSize()

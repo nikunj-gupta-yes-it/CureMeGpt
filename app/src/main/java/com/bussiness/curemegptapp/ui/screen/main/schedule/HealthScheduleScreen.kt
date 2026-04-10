@@ -75,8 +75,7 @@ import java.time.format.DateTimeFormatter
 
 
 @RequiresApi(Build.VERSION_CODES.O)
-val appDateFormatter: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("M-d-yyyy")
+val appDateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("M-d-yyyy")
 
 data class Appointment(
     val title: String,
@@ -123,6 +122,7 @@ fun HealthScheduleScreen(
     val members by viewModel.memberOption.collectAsState()
     val appointments = state.appointmentList
     val medications = state.medicationList
+
     val filteredAppointments = appointments.filter { item ->
         val searchMatch =
             item.title.contains(searchQuery, true) ||
@@ -140,25 +140,15 @@ fun HealthScheduleScreen(
         searchMatch && memberMatch && dateMatch
     }
 
+    var selectedMemberMed by remember { mutableStateOf<String?>(null) }
 
     val filteredMedications = medications.filter { item ->
-        val searchMatch =
-            item.title.contains(searchQuery, true) ||
-                    item.patientName.contains(searchQuery, true)
-        val memberMatch =
-            selectedMember == null || item.patientName == selectedMember
-
-        val dateMatch = when (selectedFilter) {
-            "Today" -> item.endDate == getTodayDate()
-            "Upcoming" -> isUpcoming(item.endDate)
-            "Past" -> isPast(item.endDate)
-            else -> true
-        }
-
-        searchMatch && memberMatch && dateMatch
+        val searchMatch = item.title.contains(searchQuery, true) || item.patientName.contains(searchQuery, true)
+        val memberMatch = selectedMemberMed == null || item.patientName ==selectedMemberMed
+        Log.d("TESTING_FILTER", "SELECTED FILTER IS Medication" + selectedMemberMed)
+        searchMatch && memberMatch
     }
 
-    var selectedMemberMed by remember { mutableStateOf<String?>(null) }
 
     Box(
         modifier = Modifier
@@ -615,13 +605,3 @@ fun NoDataFound(text: String) {
         }
     }
 }
-
-
-
-
-
-
-
-
-
-

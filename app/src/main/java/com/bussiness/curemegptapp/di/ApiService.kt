@@ -31,7 +31,7 @@ interface ApiService {
         @Field("emailPhone") emailOrPhone: String,
         @Field("password") password: String,
         @Field("fcmToken") fcmToken: String
-    ): Response<LoginResponse>
+    ) : Response<LoginResponse>
 
     @FormUrlEncoded
     @POST(ApiEndPoint.SIGNUP_URL)
@@ -126,8 +126,6 @@ interface ApiService {
     suspend fun completeProfileDocumentsRequest(
         @Part files: List<MultipartBody.Part>
     ): Response<ProfileResponse>
-
-
 
     @POST("onboarding_data")
     suspend fun onBoardingData() :Response<OnboardingResponse>
@@ -441,5 +439,18 @@ interface ApiService {
     @POST("user_with_family_details")
     suspend fun getUserWithFamilyDetails() : Response<GsonJsonObject>
 
+    @POST("chat")
+    @Multipart
+    suspend fun getChatResponse(
+        @Part("family_member_id") familyMemberId :RequestBody?,
+        @Part("message") message :RequestBody,
+        @Part("type") type:RequestBody,
+        @Part("chat_id") chatId :RequestBody?,
+        @Part profile_image:  MultipartBody.Part?
+        ) : Response<GsonJsonObject>
+
+
+    @POST("get_prompt_questions")
+     suspend fun getPromptQuestions() : Response<GsonJsonObject>
 
 }

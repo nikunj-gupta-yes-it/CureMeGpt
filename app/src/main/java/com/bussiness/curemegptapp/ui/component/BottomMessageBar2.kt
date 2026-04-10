@@ -110,7 +110,7 @@ fun BottomMessageBar2(
     var recognizedText by remember { mutableStateOf("") }
     var rmsValue by remember { mutableStateOf(0f) }
     var voiceText by remember { mutableStateOf("") }     // speech result
-    var isMessageEmpty = remember {  state.message.isBlank() && recognizedText.isBlank() }
+    var isMessageEmpty = state.message.isBlank() && recognizedText.isBlank()
 
     val speechRecognizer = remember {
         SpeechRecognizer.createSpeechRecognizer(context)

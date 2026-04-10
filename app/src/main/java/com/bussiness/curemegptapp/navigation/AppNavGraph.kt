@@ -102,7 +102,10 @@ fun AppNavGraph(navController: NavHostController,modifier : Modifier = Modifier)
                 OpenChatScreen(navController, from)
             }
 
-            composable<AppDestination.ChatDataScreen> { ChatDataScreen(navController) }
+            composable<AppDestination.ChatDataScreen> {
+                ChatDataScreen(navController)
+
+            }
 
             composable(
                 route = "addFamilyMember?from={from}",

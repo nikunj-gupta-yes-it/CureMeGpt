@@ -39,6 +39,15 @@ class ChatViewModel @Inject constructor(
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val messages: StateFlow<List<ChatMessage>> = _messages
 
+
+    fun appendVoiceText(voiceText: String) {
+        _uiState.update {
+            it.copy(
+                message = (it.message + " " + voiceText).trim()
+            )
+        }
+    }
+
     fun onMessageChange(newText: String) {
         _uiState.update { it.copy(message = newText.take(1000)) }
     }
@@ -83,7 +92,7 @@ class ChatViewModel @Inject constructor(
         // reset input
         _uiState.update { ChatInputState() }
 
-        // Example: simulate AI response
+
         viewModelScope.launch {
             delay(800)
             _messages.update {

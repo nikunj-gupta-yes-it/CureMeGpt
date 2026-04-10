@@ -58,14 +58,7 @@ fun MenuDrawer(onDismiss: () -> Unit, selectedUser: String, onUserChange: (Strin
     var showCaseHistory by remember { mutableStateOf(false) }
     var selectedChatIndex by remember { mutableStateOf<Int?>(null) }
 
-    val chatHistory = listOf(
-        stringResource(R.string.toothache_fever_chat),
-        stringResource(R.string.cough_cold_chat),
-        stringResource(R.string.medicine_chat),
-        stringResource(R.string.cough_short_chat),
-        stringResource(R.string.general_checkup_chat),
-        stringResource(R.string.medicine_advice_chat)
-    )
+
 
     // Define case history for each user
     val userCaseHistoryMap = mapOf(

@@ -79,7 +79,8 @@ fun PersonalInfoStep(viewModel: ProfileCompeteViewModel, onNext: () -> Unit) {
             onDateApplied = {
                 showCalendarDialog = false
                 viewModel.onDobChange(it)
-            }
+            },
+            allowFutureDates = false
         )
     }
 
@@ -290,24 +291,12 @@ fun PersonalInfoStep(viewModel: ProfileCompeteViewModel, onNext: () -> Unit) {
             horizontalPadding = 2.dp,
             text = stringResource(R.string.save_and_continue),
             onClick = {
-                /*if (validateFields()) {
-                    val height = if (heightValue.isNotBlank()) "$heightValue $heightUnit" else ""
-                    val weight = if (weightValue.isNotBlank()) "$weightValue $weightUnit" else ""
-                    viewModel.updatePersonalInfo(
-                        fullName = fullName,
-                        contactNumber = contactNumber,
-                        email = email,
-                        dateOfBirth = dateOfBirth,
-                        gender = gender,
-                        height = height,
-                        weight = weight,
-                        profilePhotoUri = selectedProfilePhotoUri
-                    )
-                    onNext()
-                }*/
+
                 viewModel.updatePersonalRequest(
                     context,
-                    onError = { msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show() },
+                    onError = {
+                        msg -> Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                              },
                     onSuccess = {
                         onNext()
                     })

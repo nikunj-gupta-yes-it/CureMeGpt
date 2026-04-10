@@ -3,6 +3,7 @@ package com.bussiness.curemegptapp.repository
 import com.bussiness.curemegptapp.apimodel.OnBoardingModel.OnboardingItem
 import com.bussiness.curemegptapp.apimodel.OnBoardingModel.OnboardingResponse
 import com.bussiness.curemegptapp.apimodel.QuestionAnswer
+import com.bussiness.curemegptapp.apimodel.chatModel.PromptQuestionResponse
 import com.bussiness.curemegptapp.apimodel.familyProfile.FamilyMemberResponse
 import com.bussiness.curemegptapp.apimodel.getAppointmentList.AppointmentData
 import com.bussiness.curemegptapp.apimodel.getAppointmentList.AppointmentItem
@@ -286,4 +287,13 @@ interface Repository {
     ) : Flow<NetworkResult<String>>
     suspend fun getUserWithFamilyDetails() :  Flow<NetworkResult<MutableList<FamilyModel>>>
 
+     suspend fun getChatResponse(
+         familyMemberId: RequestBody?,
+         message: RequestBody,
+         type: RequestBody,
+         chatId: RequestBody?,
+         profile_image: MultipartBody.Part?
+    ) : Flow<NetworkResult<String>>
+
+    suspend fun getPromptQuestions() : Flow<NetworkResult<PromptQuestionResponse>>
 }

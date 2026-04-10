@@ -11,6 +11,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
 import android.provider.OpenableColumns
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -94,7 +95,7 @@ fun MyProfileScreen(
     var showPhotoSheet by remember { mutableStateOf(false) }
     var imageUri by remember { mutableStateOf<Uri?>(null) }
 
-    // यह state profile photo के लिए है
+
     var selectedProfilePhotoUri by remember { mutableStateOf<Uri?>(null) }
 
     // Image crop launcher
@@ -155,7 +156,7 @@ fun MyProfileScreen(
         }
     }
 
-    // Permission launcher for camera
+
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -307,7 +308,7 @@ fun ProfileContent(
                     .fillMaxWidth()
                     .height(240.dp)
             ) {
-                // Purple background
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -318,7 +319,6 @@ fun ProfileContent(
                         )
                 )
 
-                // Top bar
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -341,7 +341,7 @@ fun ProfileContent(
                         }
 
                         Text(
-                            text = stringResource(R.string.my_profile_title)/*"My Profile"*/,
+                            text = stringResource(R.string.my_profile_title),
                             fontSize = 20.sp,
                             fontFamily = FontFamily(Font(R.font.onest_medium)),
                             fontWeight = FontWeight.Medium,
@@ -385,15 +385,7 @@ fun ProfileContent(
                             .background(Color.White)
                             .padding(13.dp)
                     ) {
-                        // यहाँ आप Glide या Coil का use करके network image load कर सकते हैं
-      /*                  Image(
-                            painter = painterResource(id = R.drawable.ic_profile_image),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(CircleShape),
-                            contentScale = ContentScale.Crop
-                        )*/
+
                         if (selectedProfilePhotoUri != null) {
                             AsyncImage(
                                 model = selectedProfilePhotoUri,
@@ -403,15 +395,20 @@ fun ProfileContent(
                                     .clip(CircleShape),
                                 contentScale = ContentScale.Crop
                             )
-                        } else {
-//                            Image(
-//                                    painter = painterResource(id = R.drawable.ic_profile_image),
-//                            contentDescription = stringResource(R.string.profile_photo_description, member.name),
-//                            modifier = Modifier
-//                                .fillMaxSize()
-//                                .clip(CircleShape),
-//                            contentScale = ContentScale.Crop
-//                            )
+                        }
+                        else if(member.profileImage.isNullOrEmpty() || member.profileImage == "https://curemegpt.tgastaging.com/"){
+                            Log.d("PROFILE_IMAGE", member.profileImage)
+                            Image(
+                                    painter = painterResource(id = R.drawable.user_not_found),
+                            contentDescription = stringResource(R.string.profile_photo_description, member.name),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                            )
+                        }
+                        else {
+                            Log.d("PROFILE_IMAGE", member.profileImage)
 
                             AsyncImage(
                                 model = member.profileImage,

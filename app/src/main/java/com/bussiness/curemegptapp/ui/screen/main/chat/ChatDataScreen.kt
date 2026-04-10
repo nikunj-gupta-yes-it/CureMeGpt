@@ -4,6 +4,7 @@ package com.bussiness.curemegptapp.ui.screen.main.chat
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,14 +46,57 @@ import com.bussiness.curemegptapp.ui.viewModel.main.ChatDataViewModel
 // Dono imports important hain:
 import androidx.constraintlayout.compose.*  // ConstraintLayout, createRefs, etc.
 import androidx.constraintlayout.compose.Dimension  // Dimension class ke liye
+import com.bussiness.curemegptapp.apimodel.chatModel.FamilyDetails
+import com.bussiness.curemegptapp.data.model.ChatMessage
 import com.bussiness.curemegptapp.ui.component.input.RightSideDrawer
 import com.bussiness.curemegptapp.ui.dialog.DeleteChatDialog
 import com.bussiness.curemegptapp.ui.dialog.SwitchToDialog
 
 @SuppressLint("SuspiciousIndentation")
 @Composable
-fun ChatDataScreen(navController: NavHostController) {
-    val viewModel: ChatDataViewModel = hiltViewModel()
+fun ChatDataScreen(navController: NavHostController,
+                   viewModel : ChatDataViewModel = hiltViewModel(),
+                   ) {
+
+
+    val handle = navController.previousBackStackEntry?.savedStateHandle
+
+    val chatId = handle?.get<Int>("chatId") ?: 0
+    val familyMemberId = handle?.get<Int>("familyMemberId") ?: 0
+    val chatMessage = handle?.get<ChatMessage>("textMessage")
+    val type = handle?.get<String>("type") ?: "normal"
+    val familyList = handle?.get<List<FamilyDetails>>("familyList") ?: emptyList()
+
+
+    LaunchedEffect(Unit) {
+
+        Log.d("ChatDataScreen", "-----------------------------")
+
+        Log.d("ChatDataScreen", "chatId: $chatId")
+        Log.d("ChatDataScreen", "familyMemberId: $familyMemberId")
+        Log.d("ChatDataScreen", "type: $type")
+
+        Log.d("ChatDataScreen", "chatMessage: $chatMessage")
+
+        chatMessage?.let {
+            Log.d("ChatDataScreen", "message text: ${it.text}")
+            Log.d("ChatDataScreen", "images size: ${it.images.size}")
+            Log.d("ChatDataScreen", "pdfs size: ${it.pdfs.size}")
+        }
+
+        Log.d("ChatDataScreen", "familyList size: ${familyList.size}")
+
+        familyList.forEachIndexed { index, user ->
+            Log.d(
+                "ChatDataScreen",
+                "User[$index]: id=${user.id}, name=${user.name}, relation=${user.relationship}"
+            )
+        }
+
+        Log.d("ChatDataScreen", "-----------------------------")
+    }
+
+
     val uiState by viewModel.uiState.collectAsState()
     val messages by viewModel.messages.collectAsState()
     val listState = rememberLazyListState()
@@ -61,7 +106,10 @@ fun ChatDataScreen(navController: NavHostController) {
     var showDrawer by remember { mutableStateOf(false) }
     var selectedUser by remember { mutableStateOf("James (Myself)") }
     var showCaseDialog by remember { mutableStateOf(false) }
-    var shareChatMessage = stringResource(R.string.share_chat_message)
+    val shareChatMessage = stringResource(R.string.share_chat_message)
+
+    Log.d("ChatScreen", "User is on Chat Data Screen")
+
     RightSideDrawer(
         drawerState = showDrawer,
         onClose = { showDrawer = false },
@@ -80,13 +128,11 @@ fun ChatDataScreen(navController: NavHostController) {
             )
         }
     ) {
-
         Box(
             modifier = Modifier
                 .fillMaxSize().imePadding()
 
         ) {
-
             // Background Image
             Image(
                 painter = painterResource(id = R.drawable.chat_background),
@@ -101,8 +147,6 @@ fun ChatDataScreen(navController: NavHostController) {
                     .statusBarsPadding(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-
-
                 ChatHeader(
                     logoRes = R.drawable.ic_logo,
                     sideArrow = R.drawable.ic_cross_icon,
@@ -124,7 +168,7 @@ fun ChatDataScreen(navController: NavHostController) {
                                 val shareText = shareChatMessage
 
                                 val intent = Intent(Intent.ACTION_SEND).apply {
-                                    type = "text/plain"
+                                    this.type = "text/plain"
                                     putExtra(Intent.EXTRA_TEXT, shareText)
                                 }
 
@@ -139,24 +183,17 @@ fun ChatDataScreen(navController: NavHostController) {
                     }
                 )
 
-                /** CHAT BODY + MESSAGE BAR */
                 ConstraintLayout(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
+                    modifier = Modifier.weight(1f).fillMaxWidth()
                 ) {
-                    // Create references
-                    val (chatSection, messageBar) = createRefs()
 
+                    val (chatSection, messageBar) = createRefs()
 
                     CommunityChatSection(
                         messages = messages,
                         listState = listState,
                         viewModel = viewModel,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .constrainAs(chatSection) {
+                        modifier = Modifier.fillMaxWidth().navigationBarsPadding().constrainAs(chatSection) {
                                 top.linkTo(parent.top)
                                 start.linkTo(parent.start)
                                 end.linkTo(parent.end)
@@ -209,182 +246,12 @@ fun ChatDataScreen(navController: NavHostController) {
     }
 
 }
-/*
-@Composable
-fun ChatDataScreen(navController: NavHostController) {
-    val viewModel: ChatDataViewModel = hiltViewModel()
-    val uiState by viewModel.uiState.collectAsState()
-    val messages by viewModel.messages.collectAsState()
-    val listState = rememberLazyListState()
-    var showSwitchDialog by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    val context = LocalContext.current
-    var showDrawer by remember { mutableStateOf(false) }
-    var selectedUser by remember { mutableStateOf("James (Myself)") }
-    var showCaseDialog by remember { mutableStateOf(false) }
 
-    RightSideDrawer(
-        drawerState = showDrawer,
-        onClose = { showDrawer = false },
-        drawerWidth = 320.dp,
-        drawerContent = {
-            MenuDrawer(
-                onDismiss = { showDrawer = false },
-                selectedUser = selectedUser,
-                onUserChange = {
-                    selectedUser = it
-                    showDrawer = false
-                },
-                onClickNewCaseChat = {
-                    showCaseDialog = true
-                }
-            )
-        }
-    ) {
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize().imePadding()
-
-        ) {
-
-            // Background Image
-            Image(
-                painter = painterResource(id = R.drawable.chat_background),
-                contentDescription = null,
-                modifier = Modifier.matchParentSize(),
-                contentScale = ContentScale.FillBounds
-            )
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-
-
-                ChatHeader(
-                    logoRes = R.drawable.ic_logo,
-                    sideArrow = R.drawable.ic_cross_icon,
-                    filterIcon = R.drawable.ic_filter_menu_icon3,
-                    menuIcon = R.drawable.ic_menu_icon3,
-                    onLeftIconClick = { navController.popBackStack() },
-                    onFilterClick = {
-
-                        showDrawer = true
-                    },
-                    //onMenuClick = {}
-                    menuContent = {
-                        SwitchShareDeletePopUpMenu(
-                            switchText = "Switch to Case",
-                            onSwitchClick = {
-                                showSwitchDialog = true
-                            },
-                            onShareClick = {
-                                // Share logic
-                                val shareText = """
-            Hey 👋
-            
-            This is a dummy chat message.
-            Just testing share feature.
-            
-            Shared from CureMeGPT App 🚀
-        """.trimIndent()
-
-                                val intent = Intent(Intent.ACTION_SEND).apply {
-                                    type = "text/plain"
-                                    putExtra(Intent.EXTRA_TEXT, shareText)
-                                }
-
-                                context.startActivity(
-                                    Intent.createChooser(intent, "Share chat via")
-                                )
-                            },
-                            onDeleteClick = {
-                                showDeleteDialog = true
-                            }
-                        )
-                    }
-                )
-
-                /** CHAT BODY + MESSAGE BAR */
-                ConstraintLayout(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                ) {
-                    // Create references
-                    val (chatSection, messageBar) = createRefs()
-
-
-                    CommunityChatSection(
-                        messages = messages,
-                        listState = listState,
-                        viewModel = viewModel,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .constrainAs(chatSection) {
-                                top.linkTo(parent.top)
-                                start.linkTo(parent.start)
-                                end.linkTo(parent.end)
-                                bottom.linkTo(messageBar.top)
-                                height = Dimension.fillToConstraints
-                            }
-                    )
-
-                    BottomMessageBar2(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .constrainAs(messageBar) {
-                                bottom.linkTo(parent.bottom)
-                                start.linkTo(parent.start)
-                                end.linkTo(parent.end)
-                            }
-                        ,
-                        state = uiState,
-                        viewModel = viewModel
-                    )
-                }
-            }
-        }
-    }
-
-    if (showSwitchDialog) {
-        SwitchToDialog(
-            title = "Switch to Case Chat?",
-            description = "This chat will be converted into a case chat. Your conversation will be tracked with case history and medical records. Do you want to continue?",
-            buttonText = "Stay on Normal Chat",
-            onDismiss = {
-                showSwitchDialog = false
-            },
-            onConfirm = {
-                showSwitchDialog = false
-            }
-        )
-    }
-    if (showDeleteDialog) {
-        DeleteChatDialog(
-            title = "Delete Chat?",
-            message = "Once deleted, this chat and its medical history cannot be recovered.",
-            warningText = "Deleting may affect AI’s ability to suggest based on your past health history.",
-            bottomText = "You’re always in control — deleted chats cannot be restored.",
-            cancelText = "Cancel",
-            confirmText = "Yes, Delete Chat",
-            onDismiss = { showDeleteDialog = false},
-            onConfirm = { showDeleteDialog = false}
-        )
-    }
-
-}
-
- */
 
 @Preview(showBackground = true)
 @Composable
 fun ChatDataScreenPreview() {
     val navController = rememberNavController()
-    ChatDataScreen(navController = navController)
+   // ChatDataScreen(navController = navController)
 }
 

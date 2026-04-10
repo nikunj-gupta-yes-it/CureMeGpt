@@ -2,9 +2,7 @@ package com.bussiness.curemegptapp.ui.screen.main.schedule
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,12 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -90,54 +83,13 @@ fun MedicationsCard( medication: Medication,
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                // Title and Menu
-           /*     Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = medication.title,
-                            fontSize = 16.sp,
-                            fontFamily = FontFamily(Font(R.font.urbanist_medium)),
-                            fontWeight = FontWeight.Medium,
-                        )
-
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        Text(
-                            text = medication.dosage,
-                            fontSize = 12.sp,
-                            color = Color(0xFF666666),
-                            fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-                            fontWeight = FontWeight.Normal
-                        )
-                    }
-
-                    // Menu Icon (Three dots - you'll need to add this icon)
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clickable( interactionSource = remember { MutableInteractionSource() },
-                        indication = null){ *//* Handle menu click *//* },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // Replace with your menu icon
-                        Text(
-                            text = "⋮",
-                            fontSize = 20.sp,
-                            color = Color(0xFF666666)
-                        )
-                    }
-                }*/
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Top
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
+
                         Text(
                             text = medication.title,
                             fontSize = 16.sp,
@@ -154,8 +106,8 @@ fun MedicationsCard( medication: Medication,
                             fontFamily = FontFamily(Font(R.font.urbanist_regular)),
                             fontWeight = FontWeight.Normal
                         )
-                    }
 
+                    }
 
                     EditDeleteMenu(
                         modifier = Modifier,
@@ -178,7 +130,7 @@ fun MedicationsCard( medication: Medication,
 
                 Spacer(modifier = Modifier.height(13.dp))
 
-                // Frequency Badge
+
                 Surface(
                     shape = RoundedCornerShape(20.dp),
                     color = Color(0xFFE8E4FF)
@@ -196,30 +148,34 @@ fun MedicationsCard( medication: Medication,
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Days
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_days_name_icon),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp),
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    medication.days?.let {
-                        Text(
-                            text = it,
-                            fontSize = 14.sp,
-                            color = Color.Black,
-                            fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-                            fontWeight = FontWeight.Normal
+                if (!medication.days.isNullOrEmpty()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_days_name_icon),
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
                         )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        medication.days.let {
+                            Text(
+                                text = it,
+                                fontSize = 14.sp,
+                                color = Color.Black,
+                                fontFamily = FontFamily(Font(R.font.urbanist_regular)),
+                                fontWeight = FontWeight.Normal
+                            )
+                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
 
                 // Times with Checkboxes - Using Manual Grid (2 columns)
+
                 val times = medication.times
+
                 Row{
                     Image(
                         painter = painterResource(id = R.drawable.ic_date_health_icon),
@@ -349,11 +305,8 @@ fun MedicationsCard( medication: Medication,
                    }
                 }
 
-
-
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Date Range
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -362,7 +315,9 @@ fun MedicationsCard( medication: Medication,
                         contentDescription = null,
                         modifier = Modifier.size(29.dp),
                     )
+
                     Spacer(modifier = Modifier.width(4.dp))
+
                     Text(
                         text = "${medication.startDate}",
                         fontSize = 12.sp,
@@ -390,7 +345,6 @@ fun MedicationsCard( medication: Medication,
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Instructions
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {

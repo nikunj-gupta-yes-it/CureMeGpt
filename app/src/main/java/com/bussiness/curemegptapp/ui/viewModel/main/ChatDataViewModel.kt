@@ -20,6 +20,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.bussiness.curemegptapp.R
+import com.bussiness.curemegptapp.apimodel.scheduleAppointment.FamilyModel
+import com.bussiness.curemegptapp.repository.NetworkResult
+import com.bussiness.curemegptapp.repository.Repository
+import com.bussiness.curemegptapp.util.LoaderManager
+import kotlinx.coroutines.flow.collectLatest
 
 
 data class ChatInputState1(
@@ -35,8 +40,15 @@ data class ChatInputState1(
 
 @HiltViewModel
 class ChatDataViewModel @Inject constructor(
-    private val app: Application
+    private val app: Application,
+    val repository: Repository
 ) : ViewModel() {
+
+
+    private var _memberOption = MutableStateFlow<List<String>>(emptyList())
+    val memberOption = _memberOption
+    private var memberRealData = mutableListOf<FamilyModel>()
+
 
     private val _uiState = MutableStateFlow(ChatInputState1())
     val uiState: StateFlow<ChatInputState1> = _uiState
@@ -59,7 +71,37 @@ class ChatDataViewModel @Inject constructor(
         if (_profiles.value.isNotEmpty()) {
             _uiState.update { it.copy(selectedProfile = _profiles.value.first()) }
         }
+      //  getFamilyMembers()
     }
+
+
+     fun getFamilyMembers() {
+        viewModelScope.launch {
+            LoaderManager.show()
+            repository.getUserWithFamilyDetails().collectLatest { result ->
+
+                when (result) {
+
+                    is NetworkResult.Loading -> {
+
+                    }
+                    is NetworkResult.Success -> {
+                        LoaderManager.hide()
+                        val data = result.data ?: emptyList()
+                        val familyList = data.toMutableList()
+                        memberRealData = familyList
+                        _memberOption.value = familyList.map { it.name }
+
+                    }
+
+                    is NetworkResult.Error -> {
+                        LoaderManager.hide()
+                    }
+                }
+            }
+        }
+    }
+
 
     private fun getDefaultProfiles(): List<Profile> {
         return listOf(
@@ -140,7 +182,7 @@ class ChatDataViewModel @Inject constructor(
             return
         }
 
-        // Otherwise, send new message
+
         val msg = ChatMessage(
             text = s.message.takeIf { it.isNotBlank() },
             isUser = true,
@@ -149,10 +191,10 @@ class ChatDataViewModel @Inject constructor(
         )
         _messages.update { it + msg }
 
-        // Reset input but keep selected profile
+
         _uiState.update { ChatInputState1(selectedProfile = s.selectedProfile) }
 
-        // Simulate AI response
+
         simulateAIResponse()
     }
 
@@ -207,24 +249,7 @@ class ChatDataViewModel @Inject constructor(
         }
     }
 
-//    fun rateMessage(messageId: String, isPositive: Boolean) {
-//        viewModelScope.launch {
-//            val index = _messages.value.indexOfFirst { it.id == messageId }
-//            if (index != -1) {
-//                _messages.update {
-//                    it.toMutableList().apply {
-//                        this[index] = this[index].copy(
-//                            rating = if (isPositive) 1 else -1,
-//                            isRated = true
-//                        )
-//                    }
-//                }
-//
-//                val feedback = if (isPositive) "positive" else "negative"
-//                Toast.makeText(app, "Thanks for your $feedback feedback!", Toast.LENGTH_SHORT).show()
-//            }
-//        }
-//    }
+
 
     fun rateMessage(messageId: String, isPositive: Boolean) {
         viewModelScope.launch {

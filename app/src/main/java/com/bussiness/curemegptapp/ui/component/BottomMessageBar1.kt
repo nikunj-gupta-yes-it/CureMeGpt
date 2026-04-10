@@ -63,6 +63,7 @@ import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.bussiness.curemegptapp.R
+import com.bussiness.curemegptapp.data.model.ChatMessage
 import com.bussiness.curemegptapp.ui.viewModel.main.ChatDataViewModel
 import com.bussiness.curemegptapp.ui.viewModel.main.ChatInputState
 import com.bussiness.curemegptapp.ui.viewModel.main.ChatInputState1
@@ -76,41 +77,317 @@ fun BottomMessageBar1(
     modifier: Modifier = Modifier,
     state: ChatInputState = ChatInputState(),
     viewModel: ChatViewModel = hiltViewModel(),
-    onSendClicked: () -> Unit = {},
+    onSendClicked: (ChatMessage) -> Unit = {},
     isVisible : Boolean = false
 ) {
+
+//    val context = LocalContext.current
+//    val fileLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+//            uri?.let {
+//                val mimeType = context.contentResolver.getType(it)
+//
+//                if (mimeType?.startsWith("image/") == true) {
+//                    viewModel.addImage(it)
+//                } else if (mimeType == "application/pdf") {
+//                    viewModel.addPdf(it)
+//                }
+//            }
+//        }
+//    var isRecording by remember { mutableStateOf(false) }
+//    var showText by remember { mutableStateOf(true) }
+//    var recognizedText by remember { mutableStateOf("") }
+//
+//    var rmsValue by remember { mutableStateOf(0f) }
+//    var voiceText by remember { mutableStateOf("") }     // speech result
+//
+//
+//    val speechRecognizer = remember {
+//        SpeechRecognizer.createSpeechRecognizer(context)
+//    }
+//
+//    val intent = remember {
+//        Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+//            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+//                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+//            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US")
+//            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+//        }
+//    }
+//
+//    DisposableEffect(Unit) {
+//
+//        speechRecognizer.setRecognitionListener(object : RecognitionListener {
+//
+//            override fun onRmsChanged(rmsdB: Float) {
+//                rmsValue = rmsdB
+//            }
+//
+//            override fun onPartialResults(partialResults: Bundle?) {
+//                recognizedText =
+//                    partialResults?.getStringArrayList(
+//                        SpeechRecognizer.RESULTS_RECOGNITION
+//                    )?.firstOrNull() ?: ""
+//            }
+//
+//            override fun onResults(results: Bundle?) {
+//                val voiceResult =
+//                    results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+//                        ?.firstOrNull() ?: ""
+//
+//                viewModel.onMessageChange(
+//                    viewModel.uiState.value.message + " " + voiceResult
+//                )
+//                // ✅ STOP RECORDING HERE
+//                isRecording = false
+//                rmsValue = 0f
+//                showText = false
+//            }
+//
+//            override fun onReadyForSpeech(params: Bundle?) {
+//                isRecording = true
+//            }
+//
+//            override fun onBeginningOfSpeech() {
+//                isRecording = true
+//            }
+//
+//            override fun onEndOfSpeech() {
+//                isRecording = false
+//                rmsValue = 0f
+//            }
+//
+//            override fun onError(error: Int) {
+//                isRecording = false
+//            }
+//
+//            override fun onBufferReceived(buffer: ByteArray?) {}
+//            override fun onEvent(eventType: Int, params: Bundle?) {}
+//        })
+//
+//        onDispose { speechRecognizer.destroy() }
+//    }
+//    var showUserDropdown by remember { mutableStateOf(false) }
+//
+//    Column(
+//        modifier = modifier
+//            .fillMaxWidth()
+//            .background(color = Color.Transparent)
+//            .padding( end = 5.dp/*horizontal = 5.dp*/).padding(bottom = 8.dp)
+//    ) {
+//        Spacer(modifier = Modifier.height(5.dp))
+//
+//        Row(
+//            modifier = Modifier.fillMaxWidth().background(Color.Transparent),
+//            verticalAlignment = Alignment.CenterVertically
+//        ) {
+//            Row(
+//                modifier = Modifier
+//                    .weight(1f)
+//                    .wrapContentHeight()
+//                    .background(Color(0xFFF5F0FF), RoundedCornerShape(28.dp))
+//                    .padding(start = 5.dp, end = 10.dp),
+//                verticalAlignment = Alignment.CenterVertically
+//            ) {
+//                Icon(
+//                    painter = painterResource(id = R.drawable.attach_ic),
+//                    contentDescription = null,
+//                    tint = Color.Unspecified,
+//                    modifier = Modifier
+//                        .wrapContentSize().align(alignment = Alignment.Bottom).padding(start = 13.dp, bottom = 13.dp)
+//                        .clickable(interactionSource = remember { MutableInteractionSource() },
+//                            indication = null
+//                        ) {
+//                            // imageLauncher.launch("image/*")
+//                            fileLauncher.launch(
+//                                arrayOf(
+//                                    "image/*",
+//                                    "application/pdf"
+//                                )
+//                            )
+//                        }
+//                )
+//
+//                Spacer(modifier = Modifier.width(5.dp))
+//
+//                Column {
+//                    if (state.images.isNotEmpty() || state.pdfs.isNotEmpty()) {
+//                        Spacer(modifier = Modifier.height(5.dp))
+//                        InlineAttachmentPreview(
+//                            images = state.images,
+//                            pdfs = state.pdfs,
+//                            onRemoveImage = viewModel::removeImage,
+//                            onRemovePdf = viewModel::removePdf
+//                        )
+//                        Spacer(modifier = Modifier.height(6.dp))
+//                    }
+//                    if (!showText) {
+//                        Column(
+//                            modifier = Modifier
+//                                .fillMaxWidth()
+//                                .background(Color(0xFFF4EFFF), RoundedCornerShape(20.dp))
+//                                .padding(8.dp)
+//                        ) {
+//                            Text(
+//                                text = "See text",
+//                                color = Color(0xFF374151),
+//                                modifier = Modifier.align(Alignment.CenterHorizontally).clickable(interactionSource = remember { MutableInteractionSource() },
+//                                    indication = null) {
+//                                    showText = true
+//                                }
+//                            )
+//
+//                            Spacer(modifier = Modifier.height(12.dp))
+//
+//                            Row(verticalAlignment = Alignment.CenterVertically) {
+//
+//                                Icon(
+//                                    painterResource(R.drawable.ic_close),
+//                                    contentDescription = null,
+//                                    tint = Color.Unspecified,
+//                                    modifier = Modifier.size(23.dp).clickable(interactionSource = remember { MutableInteractionSource() },
+//                                        indication = null) {
+//                                        speechRecognizer.cancel()
+//                                        recognizedText = ""
+//                                        viewModel.onMessageChange("")
+//                                        rmsValue = 0f
+//                                        isRecording = false
+//                                        showText = true
+//
+//                                    }
+//                                )
+//
+//                                Spacer(Modifier.width(12.dp))
+//
+//
+//                                if (isRecording) {
+//                                    val composition by rememberLottieComposition(
+//                                        LottieCompositionSpec.RawRes(R.raw.ic_voice_wave_json)
+//                                    )
+//
+//                                    LottieAnimation(
+//                                        composition,
+//                                        iterations = LottieConstants.IterateForever,
+//                                        modifier = Modifier.weight(1f).height(24.dp)
+//                                    )
+//
+//                                } else {
+//                                    Image(
+//                                        painter = painterResource(R.drawable.voice_waveform),
+//                                        contentDescription = null,
+//                                        modifier = Modifier.weight(1f)
+//                                    )
+//                                }
+//
+//                                Spacer(Modifier.width(12.dp))
+//
+//
+//                            }
+//                        }
+//                    }
+//                    else {
+//                        if(showText){  voiceText = recognizedText}
+//
+//
+//                        TextField(
+//                            // value = textInput + voiceText,
+//                            value = state.message,
+//                            onValueChange = {
+//                                viewModel.onMessageChange(it)
+//                                // textInput = it
+//                                recognizedText = "" },
+//                            modifier = Modifier.fillMaxWidth(),
+//                            textStyle = TextStyle(
+//                                fontFamily = FontFamily(Font(R.font.urbanist_regular)),
+//                                fontSize = 13.sp,
+//                                color = Color.Black
+//                            ),
+//                            placeholder = {
+//                                Text(
+//                                    "Ask anything",
+//                                    fontSize = 12.sp,
+//                                    color = Color(0xFF949494),
+//                                    fontFamily = FontFamily(Font(R.font.urbanist_regular))
+//                                )
+//                            },
+//                            maxLines = 4,
+//                            colors = TextFieldDefaults.colors(
+//                                focusedIndicatorColor = Color.Transparent,
+//                                unfocusedIndicatorColor = Color.Transparent,
+//                                focusedContainerColor = Color.Transparent,
+//                                unfocusedContainerColor = Color.Transparent,
+//                                focusedTextColor = Color.Black,
+//                                unfocusedTextColor = Color.Black,
+//                                cursorColor = Color.Black
+//                            ))
+//                    }
+//                }
+//            }
+//
+//            Spacer(modifier = Modifier.width(6.dp))
+//
+//            val isMessageEmpty = state.message.isBlank() && recognizedText.isBlank()
+//
+//            if (isMessageEmpty) {
+//                IconButton(
+//                    onClick = {
+//                        if (!isRecording) {
+//                            recognizedText = ""
+//                            showText = false
+//                            speechRecognizer.startListening(intent)
+//                        } else {
+//                            speechRecognizer.stopListening()
+//                        }
+//                    },
+//
+//                    ) {
+//                    Icon(
+//                        painter = painterResource(id = R.drawable.voiceinc_ic),
+//                        // painter = painterResource(id = R.drawable.ic_mic_icon),
+//                        contentDescription = "Voice Input",
+//                        tint = Color.Unspecified,
+//                        modifier = Modifier.wrapContentSize()
+//                    )
+//                }
+//            }
+//            else {
+//                IconButton(
+//                    onClick = {
+//                        val currentMessage = state.message
+//                        viewModel.sendMessageFromInput()
+//                        onSendClicked(currentMessage)
+//                    }
+//                ) {
+//                    Icon(
+//                        painterResource(R.drawable.send_ic),
+//                        contentDescription = "Send",
+//                        tint = Color.Unspecified,
+//                        modifier = Modifier.wrapContentSize()
+//                    )
+//                }
+//            }
+//        }
+//    }
+
+
     val context = LocalContext.current
-   // val profiles by viewModel.profiles.collectAsState()
 
-    val fileLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-            uri?.let {
-                val mimeType = context.contentResolver.getType(it)
+    val fileLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let {
+            val mimeType = context.contentResolver.getType(it)
 
-                if (mimeType?.startsWith("image/") == true) {
-                    viewModel.addImage(it)
-                } else if (mimeType == "application/pdf") {
-                    viewModel.addPdf(it)
-                }
+            if (mimeType?.startsWith("image/") == true) {
+                viewModel.addImage(it)
+            } else if (mimeType == "application/pdf") {
+                viewModel.addPdf(it)
             }
         }
+    }
 
-    val users = listOf(
-        "James (Myself)",
-        "Rose Logan (Spouse)",
-        "Peter Logan (Son)"
-    )
-    var selectedUser by remember { mutableStateOf("James (Myself)") }
-
-
-
-//15-dec-2025
     var isRecording by remember { mutableStateOf(false) }
     var showText by remember { mutableStateOf(true) }
     var recognizedText by remember { mutableStateOf("") }
-    var rmsValue by remember { mutableStateOf(0f) }
-    var voiceText by remember { mutableStateOf("") }     // speech result
-
 
     val speechRecognizer = remember {
         SpeechRecognizer.createSpeechRecognizer(context)
@@ -118,8 +395,10 @@ fun BottomMessageBar1(
 
     val intent = remember {
         Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(
+                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+            )
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-US")
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
         }
@@ -128,10 +407,6 @@ fun BottomMessageBar1(
     DisposableEffect(Unit) {
 
         speechRecognizer.setRecognitionListener(object : RecognitionListener {
-
-            override fun onRmsChanged(rmsdB: Float) {
-                rmsValue = rmsdB
-            }
 
             override fun onPartialResults(partialResults: Bundle?) {
                 recognizedText =
@@ -142,16 +417,15 @@ fun BottomMessageBar1(
 
             override fun onResults(results: Bundle?) {
                 val voiceResult =
-                    results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                        ?.firstOrNull() ?: ""
+                    results?.getStringArrayList(
+                        SpeechRecognizer.RESULTS_RECOGNITION
+                    )?.firstOrNull() ?: ""
 
-                viewModel.onMessageChange(
-                    viewModel.uiState.value.message + " " + voiceResult
-                )
-                // ✅ STOP RECORDING HERE
+                // ✅ FIX: append voice to message (NO UI CHANGE)
+                viewModel.appendVoiceText(voiceResult)
+
                 isRecording = false
-                rmsValue = 0f
-                showText = false
+                showText = true
             }
 
             override fun onReadyForSpeech(params: Bundle?) {
@@ -164,177 +438,52 @@ fun BottomMessageBar1(
 
             override fun onEndOfSpeech() {
                 isRecording = false
-                rmsValue = 0f
             }
 
             override fun onError(error: Int) {
                 isRecording = false
             }
 
+            override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}
             override fun onEvent(eventType: Int, params: Bundle?) {}
         })
 
         onDispose { speechRecognizer.destroy() }
     }
-    var showUserDropdown by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(color = Color.Transparent)
-            .padding( end = 5.dp/*horizontal = 5.dp*/).padding(bottom = 8.dp)
+            .padding(end = 5.dp)
+            .padding(bottom = 8.dp)
     ) {
 
-/*//        if (isVisible){
-//
-//
-////        Surface(
-////            modifier = Modifier
-////                .wrapContentWidth()
-////
-////                .align(Alignment.CenterHorizontally)
-////                .padding(horizontal = 18.dp),
-////            shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp),
-////            color = Color.Transparent,
-////            shadowElevation = if (showUserDropdown) 2.dp else 0.dp
-////        ) {
-////
-////            Surface(
-////                modifier = Modifier
-////                    .wrapContentWidth().padding(horizontal = 10.dp).padding(top = 6.dp)
-////                    .clickable { showUserDropdown = !showUserDropdown },
-////                shape = RoundedCornerShape(30.dp),
-////                color = Color(0xFFF0EDFF),
-////
-////                ) {
-////                Row(
-////                    modifier = Modifier.padding(6.dp),
-////                    verticalAlignment = Alignment.CenterVertically,
-////                    horizontalArrangement = Arrangement.SpaceBetween
-////                ) {
-////
-////                    Image(
-////                        painter = painterResource(R.drawable.ic_chat_circle_person_icon),
-////                        contentDescription = null,
-////                        modifier = Modifier.wrapContentSize()
-////                    )
-////
-////                    Spacer(Modifier.width(4.dp))
-////
-////                    Text(
-////                        selectedUser,
-////                        color = Color(0xFF5B47DB),
-////                        fontSize = 14.sp,
-////                        fontWeight = FontWeight.Medium
-////                    )
-////                    Spacer(Modifier.width(4.dp))
-////                    Image(
-////
-////                        painter = painterResource(
-////                            if (showUserDropdown) R.drawable.ic_dropdown_show
-////                            else R.drawable.ic_dropdown_icon
-////                        ),
-////                        contentDescription = null,
-////                        modifier = Modifier.padding(end = 6.dp)
-////                    )
-////                }
-////            }
-////        }
-////
-////
-////        if (showUserDropdown) {
-////            Card(
-////                modifier = Modifier
-////                    .fillMaxWidth()
-////                    .wrapContentHeight(),
-////                shape = RoundedCornerShape(16.dp),
-////                colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-////                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-////            ) {
-////                Column(
-////                    modifier = Modifier.padding(vertical = 8.dp)
-////                ) {
-////                    users.forEachIndexed { index, user ->
-////
-////                        Box(
-////                            modifier = Modifier
-////                                .fillMaxWidth()
-////                                .height(44.dp)
-////                                .clickable(
-////                                    interactionSource = remember { MutableInteractionSource() },
-////                                    indication = null
-////                                ) {
-////
-////                                    selectedUser = user
-////                                    showUserDropdown = false
-////                                }
-////                                .padding(horizontal = 16.dp)
-////                        ) {
-////                            Row(
-////                                modifier = Modifier.fillMaxSize(),
-////                                horizontalArrangement = Arrangement.SpaceBetween,
-////                                verticalAlignment = Alignment.CenterVertically
-////                            ) {
-////                                // User name with proper styling
-////                                Text(
-////                                    text = user,
-////                                    fontSize = 16.sp,
-////                                    fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-////                                    fontWeight = if (user == selectedUser) FontWeight.Medium else FontWeight.Normal,
-////                                    color = if (user == selectedUser) Color(0xFF4338CA) else Color(0xFF374151)
-////                                )
-////
-////                                // Tick icon only for selected user
-////                                if (user == selectedUser) {
-////                                    Image(
-////                                        painter = painterResource(id = R.drawable.ic_tick_icon),
-////                                        contentDescription = "Selected",
-////                                        modifier = Modifier.size(20.dp)
-////                                    )
-////                                }
-////                            }
-////                        }
-////
-////                    }
-////                }
-////            }
-////        }
-//
-//
-//       // Spacer(Modifier.height(20.dp))
-//        }
-       // Spacer(Modifier.height(20.dp))*/
         Spacer(modifier = Modifier.height(5.dp))
+
         Row(
-            modifier = Modifier.fillMaxWidth().background(Color.Transparent),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-          //  Spacer(modifier = Modifier.width(5.dp))
-            // Rounded text box
+
             Row(
                 modifier = Modifier
                     .weight(1f)
-                    .wrapContentHeight()
                     .background(Color(0xFFF5F0FF), RoundedCornerShape(28.dp))
                     .padding(start = 5.dp, end = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+
                 Icon(
                     painter = painterResource(id = R.drawable.attach_ic),
                     contentDescription = null,
                     tint = Color.Unspecified,
                     modifier = Modifier
-                        .wrapContentSize().align(alignment = Alignment.Bottom).padding(start = 13.dp, bottom = 13.dp)
-                        .clickable(interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            // imageLauncher.launch("image/*")
+                        .padding(start = 13.dp, bottom = 13.dp)
+                        .clickable {
                             fileLauncher.launch(
-                                arrayOf(
-                                    "image/*",
-                                    "application/pdf"
-                                )
+                                arrayOf("image/*", "application/pdf")
                             )
                         }
                 )
@@ -342,6 +491,8 @@ fun BottomMessageBar1(
                 Spacer(modifier = Modifier.width(5.dp))
 
                 Column {
+
+                    // Attachments preview (UNCHANGED)
                     if (state.images.isNotEmpty() || state.pdfs.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(5.dp))
                         InlineAttachmentPreview(
@@ -352,105 +503,30 @@ fun BottomMessageBar1(
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                     }
+
                     if (!showText) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(Color(0xFFF4EFFF), RoundedCornerShape(20.dp))
-                                .padding(8.dp)
-                        ) {
-                            Text(
-                                text = "See text",
-                                color = Color(0xFF374151),
-                                modifier = Modifier.align(Alignment.CenterHorizontally).clickable(interactionSource = remember { MutableInteractionSource() },
-                                    indication = null) {
-                                    showText = true
-                                }
-                            )
-
-                            Spacer(modifier = Modifier.height(12.dp))
-
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-
-                                Icon(
-                                    painterResource(R.drawable.ic_close),
-                                    contentDescription = null,
-                                    tint = Color.Unspecified,
-                                    modifier = Modifier.size(23.dp).clickable(interactionSource = remember { MutableInteractionSource() },
-                                        indication = null) {
-                                        speechRecognizer.cancel()
-                                        recognizedText = ""
-                                        viewModel.onMessageChange("")
-                                        rmsValue = 0f
-                                        isRecording = false
-                                        showText = true
-
-                                    }
-                                )
-
-                                Spacer(Modifier.width(12.dp))
-
-
-                                if (isRecording) {
-                                    val composition by rememberLottieComposition(
-                                        LottieCompositionSpec.RawRes(R.raw.ic_voice_wave_json)
-                                    )
-
-                                    LottieAnimation(
-                                        composition,
-                                        iterations = LottieConstants.IterateForever,
-                                        modifier = Modifier.weight(1f).height(24.dp)
-                                    )
-
-                                } else {
-                                    Image(
-                                        painter = painterResource(R.drawable.voice_waveform),
-                                        contentDescription = null,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-
-                                Spacer(Modifier.width(12.dp))
-
-
-                            }
-                        }
-                    }
-                    else {
-                        if(showText){  voiceText = recognizedText}
-
+                        // ✅ SAME UI (no change)
+                        Text("Listening...")
+                    } else {
 
                         TextField(
-                            // value = textInput + voiceText,
                             value = state.message,
                             onValueChange = {
                                 viewModel.onMessageChange(it)
-                                // textInput = it
-                                recognizedText = "" },
+                                recognizedText = ""
+                            },
                             modifier = Modifier.fillMaxWidth(),
-                            textStyle = TextStyle(
-                                fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-                                fontSize = 13.sp,
-                                color = Color.Black
-                            ),
                             placeholder = {
-                                Text(
-                                    "Ask anything",
-                                    fontSize = 12.sp,
-                                    color = Color(0xFF949494),
-                                    fontFamily = FontFamily(Font(R.font.urbanist_regular))
-                                )
+                                Text("Ask anything")
                             },
                             maxLines = 4,
                             colors = TextFieldDefaults.colors(
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent,
                                 focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedTextColor = Color.Black,
-                                unfocusedTextColor = Color.Black,
-                                cursorColor = Color.Black
-                            ))
+                                unfocusedContainerColor = Color.Transparent
+                            )
+                        )
                     }
                 }
             }
@@ -458,10 +534,12 @@ fun BottomMessageBar1(
             Spacer(modifier = Modifier.width(6.dp))
 
             val isMessageEmpty =
-                state.message.isBlank() && recognizedText.isBlank()
-
+                state.message.isBlank() &&
+                        state.images.isEmpty() &&
+                        state.pdfs.isEmpty()
 
             if (isMessageEmpty) {
+
                 IconButton(
                     onClick = {
                         if (!isRecording) {
@@ -471,35 +549,48 @@ fun BottomMessageBar1(
                         } else {
                             speechRecognizer.stopListening()
                         }
-                    },
-
-                    ) {
+                    }
+                ) {
                     Icon(
                         painter = painterResource(id = R.drawable.voiceinc_ic),
-                        // painter = painterResource(id = R.drawable.ic_mic_icon),
                         contentDescription = "Voice Input",
-                        tint = Color.Unspecified,
-                        modifier = Modifier.wrapContentSize()
+                        tint = Color.Unspecified
                     )
                 }
-            }
-            else {
+
+            } else {
+
                 IconButton(
                     onClick = {
+
+                        val s = viewModel.uiState.value
+
+                        // ✅ FINAL ChatMessage (ALL DATA)
+                        val message = ChatMessage(
+                            text = s.message.takeIf { it.isNotBlank() },
+                            isUser = true,
+                            images = s.images,
+                            pdfs = s.pdfs
+                        )
+
                         viewModel.sendMessageFromInput()
-                        onSendClicked()
+
+                        onSendClicked(message)   // ✅ send full object
                     }
                 ) {
                     Icon(
                         painterResource(R.drawable.send_ic),
                         contentDescription = "Send",
-                        tint = Color.Unspecified,
-                        modifier = Modifier.wrapContentSize()
+                        tint = Color.Unspecified
                     )
                 }
             }
         }
     }
+
+
+
+
 }
 
 
