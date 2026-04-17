@@ -31,7 +31,9 @@ data class ChatMessage(
     val timestamp: Long = System.currentTimeMillis(),
     val isGenerating: Boolean = false,
     val rating: Int = 0,       // 1 = like, -1 = dislike, 0 = none
-    val isRated: Boolean = false
+    val isRated : Boolean = false,
+     val severity : Boolean = false,
+    val chatId :Int =0
 ) :  Parcelable
 
 @Parcelize

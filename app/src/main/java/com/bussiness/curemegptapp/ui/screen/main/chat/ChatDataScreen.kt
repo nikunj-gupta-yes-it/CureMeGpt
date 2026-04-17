@@ -1,7 +1,5 @@
 package com.bussiness.curemegptapp.ui.screen.main.chat
 
-//ChatDataScreen
-
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.util.Log
@@ -56,13 +54,10 @@ import com.bussiness.curemegptapp.ui.dialog.SwitchToDialog
 
 @SuppressLint("SuspiciousIndentation")
 @Composable
-fun ChatDataScreen(navController: NavHostController,
+fun ChatDataScreen(navController : NavHostController,
                    viewModel : ChatDataViewModel = hiltViewModel(),
                    ) {
-
-
     val handle = navController.previousBackStackEntry?.savedStateHandle
-
     val chatId = handle?.get<Int>("chatId") ?: 0
     val familyMemberId = handle?.get<Int>("familyMemberId") ?: 0
     val chatMessage = handle?.get<ChatMessage>("textMessage")
@@ -72,6 +67,22 @@ fun ChatDataScreen(navController: NavHostController,
 
     LaunchedEffect(Unit) {
 
+        viewModel.setChatArgs(
+            chatId = chatId,
+            familyMemberId = familyMemberId,
+            chatMessage = chatMessage,
+            type = type,
+            familyList = familyList
+        )
+
+        viewModel.onChatScreenOpened(
+            chatId = chatId,
+            type = type,
+            message = chatMessage?.text,
+            familyMemberId = familyMemberId,
+            images = chatMessage?.images?:emptyList(),
+            pdfs = chatMessage?.pdfs?:emptyList()
+        )
     }
 
 
@@ -125,6 +136,7 @@ fun ChatDataScreen(navController: NavHostController,
                     .statusBarsPadding(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+
                 ChatHeader(
                     logoRes = R.drawable.ic_logo,
                     sideArrow = R.drawable.ic_cross_icon,
@@ -134,7 +146,6 @@ fun ChatDataScreen(navController: NavHostController,
                     onFilterClick = {
                         showDrawer = true
                     },
-                    //onMenuClick = {}
                     menuContent = {
                         SwitchShareDeletePopUpMenu(
                             switchText = stringResource(R.string.switch_to_case_text),
@@ -190,7 +201,8 @@ fun ChatDataScreen(navController: NavHostController,
                             }
                         ,
                         state = uiState,
-                        viewModel = viewModel
+                        viewModel = viewModel,
+                        familyList,familyMemberId
                     )
                 }
             }
@@ -222,6 +234,7 @@ fun ChatDataScreen(navController: NavHostController,
             onConfirm = { showDeleteDialog = false}
         )
     }
+
 
 }
 

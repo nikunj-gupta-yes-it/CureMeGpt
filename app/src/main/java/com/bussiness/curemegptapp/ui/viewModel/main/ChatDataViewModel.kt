@@ -7,6 +7,7 @@ import android.content.Context
 import android.net.Uri
 
 import android.provider.OpenableColumns
+import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -20,11 +21,15 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.bussiness.curemegptapp.R
+import com.bussiness.curemegptapp.apimodel.ChatScreenArgs
+import com.bussiness.curemegptapp.apimodel.chatModel.FamilyDetails
 import com.bussiness.curemegptapp.apimodel.scheduleAppointment.FamilyModel
 import com.bussiness.curemegptapp.repository.NetworkResult
 import com.bussiness.curemegptapp.repository.Repository
 import com.bussiness.curemegptapp.util.LoaderManager
 import kotlinx.coroutines.flow.collectLatest
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
 
 
 data class ChatInputState1(
@@ -32,7 +37,7 @@ data class ChatInputState1(
     val images: List<Uri> = emptyList(),
     val pdfs: List<PdfData> = emptyList(),
     val isRecording: Boolean = false,
-    val showVoicePreview: Boolean = false,   // NEW
+    val showVoicePreview: Boolean = false,
     val transcribedText: String = "",
     val selectedProfile: Profile? = null,
     val showProfileDropdown: Boolean = false
@@ -45,10 +50,8 @@ class ChatDataViewModel @Inject constructor(
 ) : ViewModel() {
 
 
-    private var _memberOption = MutableStateFlow<List<String>>(emptyList())
-    val memberOption = _memberOption
-    private var memberRealData = mutableListOf<FamilyModel>()
-
+    private val _chatArgs = MutableStateFlow(ChatScreenArgs())
+    val chatArgs: StateFlow<ChatScreenArgs> = _chatArgs
 
     private val _uiState = MutableStateFlow(ChatInputState1())
     val uiState: StateFlow<ChatInputState1> = _uiState
@@ -56,7 +59,7 @@ class ChatDataViewModel @Inject constructor(
     private val _messages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val messages: StateFlow<List<ChatMessage>> = _messages
 
-    // Profiles list - you can fetch this from database or hardcode
+
     private val _profiles = MutableStateFlow<List<Profile>>(emptyList())
     val profiles: StateFlow<List<Profile>> = _profiles
 
@@ -64,71 +67,64 @@ class ChatDataViewModel @Inject constructor(
     private var editingMessageId: String? = null
 
     init {
-        // Initialize profiles
+
         _profiles.value = getDefaultProfiles()
 
-        // Select first profile by default
         if (_profiles.value.isNotEmpty()) {
             _uiState.update { it.copy(selectedProfile = _profiles.value.first()) }
         }
-      //  getFamilyMembers()
+
+        //  getFamilyMembers()
+
     }
 
 
-     fun getFamilyMembers() {
-        viewModelScope.launch {
-            LoaderManager.show()
-            repository.getUserWithFamilyDetails().collectLatest { result ->
-
-                when (result) {
-
-                    is NetworkResult.Loading -> {
-
-                    }
-                    is NetworkResult.Success -> {
-                        LoaderManager.hide()
-                        val data = result.data ?: emptyList()
-                        val familyList = data.toMutableList()
-                        memberRealData = familyList
-                        _memberOption.value = familyList.map { it.name }
-
-                    }
-
-                    is NetworkResult.Error -> {
-                        LoaderManager.hide()
-                    }
-                }
-            }
-        }
+    fun setChatArgs(
+        chatId: Int,
+        familyMemberId: Int,
+        chatMessage: ChatMessage?,
+        type: String,
+        familyList: List<FamilyDetails>
+    ) {
+        _chatArgs.value = ChatScreenArgs(
+            chatId = chatId,
+            familyMemberId = familyMemberId,
+            chatMessage = chatMessage,
+            type = type,
+            familyList = familyList
+        )
     }
-
 
     private fun getDefaultProfiles(): List<Profile> {
         return listOf(
             Profile(
                 id = "general",
                 name = "General Assistant",
-                iconResId = R.drawable.ic_profile, // Add these icons to your drawable
+                iconResId = R.drawable.ic_profile,
                 description = "General purpose AI assistant"
             ),
+
             Profile(
                 id = "creative",
                 name = "Creative Writer",
                 iconResId = R.drawable.ic_profile,
                 description = "For creative writing and ideas"
             ),
+
             Profile(
                 id = "technical",
                 name = "Technical Expert",
                 iconResId = R.drawable.ic_profile,
                 description = "Technical and coding assistance"
             ),
+
             Profile(
                 id = "academic",
                 name = "Academic Helper",
                 iconResId = R.drawable.ic_profile,
                 description = "Academic writing and research"
             )
+
         )
     }
 
@@ -189,13 +185,21 @@ class ChatDataViewModel @Inject constructor(
             images = s.images,
             pdfs = s.pdfs
         )
+
         _messages.update { it + msg }
 
 
         _uiState.update { ChatInputState1(selectedProfile = s.selectedProfile) }
 
+        if(!s.message.isNullOrEmpty()) {
+            sendInitialChatRequest(
+                s.message.toString(),
+                chatId = _chatArgs.value.chatId,
+                familyMemberId = _chatArgs.value.familyMemberId,
+                type = _chatArgs.value.type
+            )
+        }
 
-        simulateAIResponse()
     }
 
     fun copyMessage(text: String) {
@@ -250,7 +254,6 @@ class ChatDataViewModel @Inject constructor(
     }
 
 
-
     fun rateMessage(messageId: String, isPositive: Boolean) {
         viewModelScope.launch {
             val index = _messages.value.indexOfFirst { it.id == messageId }
@@ -264,7 +267,7 @@ class ChatDataViewModel @Inject constructor(
                 _messages.update {
                     it.toMutableList().apply {
                         this[index] = current.copy(
-                            rating = newRating?:0,
+                            rating = newRating ?: 0,
                             isRated = newRating != null
                         )
                     }
@@ -287,33 +290,11 @@ class ChatDataViewModel @Inject constructor(
             Toast.makeText(app, "Message updated", Toast.LENGTH_SHORT).show()
 
             if (_messages.value[index].isUser) {
-                simulateAIResponse()
+                //simulateAIResponse()
             }
         }
     }
 
-    private fun simulateAIResponse() {
-        viewModelScope.launch {
-            delay(800)
-
-            val lastUserMessage = _messages.value.lastOrNull { it.isUser }
-            val selectedProfile = _uiState.value.selectedProfile
-
-            val responseText = when (selectedProfile?.id) {
-                "creative" -> "Here's a creative response to your query: [Creative content would go here]"
-                "technical" -> "From a technical perspective: [Technical explanation would go here]"
-                "academic" -> "Based on academic research: [Academic analysis would go here]"
-                else -> "Thanks for your message. Here's what I think based on your query."
-            }
-
-            _messages.update {
-                it + ChatMessage(
-                    text = responseText,
-                    isUser = false
-                )
-            }
-        }
-    }
 
     private fun getPdfName(uri: Uri): String {
         return app.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
@@ -324,13 +305,16 @@ class ChatDataViewModel @Inject constructor(
     }
 
     fun onVoiceRecorded(text: String) {
-        _uiState.update { _uiState.value.copy(
-            transcribedText = text,
-            showVoicePreview = false,
-            message = text,
-            isRecording = false
-        ) }
+        _uiState.update {
+            _uiState.value.copy(
+                transcribedText = text,
+                showVoicePreview = false,
+                message = text,
+                isRecording = false
+            )
+        }
     }
+
     fun onPartialVoiceResult(partialText: String) {
         _uiState.update {
             it.copy(
@@ -341,20 +325,20 @@ class ChatDataViewModel @Inject constructor(
     }
 
 
-//    fun showTranscribedText() {
+    //    fun showTranscribedText() {
 //        _uiState.update { _uiState.value.copy(
 //            message = _uiState.value.transcribedText,
 //            showVoicePreview = false
 //        ) }
 //    }
-fun showTranscribedText() {
-    _uiState.update {
-        it.copy(
-            message = it.transcribedText,
-            showVoicePreview = false
-        )
+    fun showTranscribedText() {
+        _uiState.update {
+            it.copy(
+                message = it.transcribedText,
+                showVoicePreview = false
+            )
+        }
     }
-}
 
 //    fun clearVoicePreview() {
 //        _uiState.update { it.copy(showVoicePreview = false, transcribedText = "") }
@@ -375,7 +359,104 @@ fun showTranscribedText() {
         val selectedProfile = _uiState.value.selectedProfile
         _uiState.update { ChatInputState1(selectedProfile = selectedProfile) }
     }
+
+
+    fun onChatScreenOpened(
+        chatId: Int,
+        type: String,
+        message: String?,
+        familyMemberId: Int,
+         images: List<Uri> = emptyList(),
+         pdfs: List<PdfData> = emptyList()
+    ) {
+        if (chatId == 0 && type == "normal") {
+
+            message?.let {
+                _messages.update { list ->
+                    list + ChatMessage(
+                        text = it,
+                        isUser = true
+                    )
+                }
+            }
+
+
+            sendInitialChatRequest(
+                message = message,
+                chatId = chatId,
+                familyMemberId = familyMemberId,
+                type = type,
+                images = image,
+                pdfs = pdfs
+            )
+        }
+    }
+
+    private fun sendInitialChatRequest(
+        message: String?,
+        chatId: Int,
+        familyMemberId: Int,
+        type: String,
+        images: List<Uri> = emptyList(),
+        pdfs: List<PdfData> = emptyList()
+    ) {
+        viewModelScope.launch {
+
+            val messageBody = message?.toRequestBody("text/plain".toMediaTypeOrNull())
+                ?: return@launch
+
+            val typeBody = type.toRequestBody("text/plain".toMediaTypeOrNull())
+
+            val chatIdBody = if (chatId == 0) null
+            else chatId.toString().toRequestBody("text/plain".toMediaTypeOrNull())
+            Log.d("TESTING_CHAT_ID","CHAT ID VALUE IS"+ chatId)
+            val familyBody = if (familyMemberId == 0) null
+            else familyMemberId.toString().toRequestBody("text/plain".toMediaTypeOrNull())
+
+            LoaderManager.show()
+            repository.getChatResponse(
+                familyMemberId = familyBody,
+                message = messageBody,
+                type = typeBody,
+                chatId = chatIdBody,
+                profile_image = null
+            ).collect { result ->
+
+                when (result) {
+
+                    is NetworkResult.Success -> {
+
+                        _chatArgs.value = _chatArgs.value.copy(
+                            chatId = result.data?.chatId?.toInt() ?: 0
+                        )
+
+                        _messages.update { (it + result.data) as List<ChatMessage> }
+
+                        LoaderManager.hide()
+                    }
+
+                    is NetworkResult.Error -> {
+                        LoaderManager.hide()
+                        _messages.update {
+                            it + ChatMessage(
+                                text = result.message,
+                                isUser = false
+                            )
+                        }
+                    }
+
+                    is NetworkResult.Loading -> {
+
+                        // optional typing UI
+                    }
+                }
+            }
+        }
+    }
+
+
 }
+
 
 //@HiltViewModel
 //class ChatViewModel @Inject constructor(

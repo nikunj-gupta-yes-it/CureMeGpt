@@ -75,6 +75,7 @@ import com.bussiness.curemegptapp.ui.viewModel.main.ChatViewModel
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.imePadding
 import com.bussiness.curemegptapp.apimodel.chatModel.FamilyDetails
+import com.bussiness.curemegptapp.data.model.ChatMessage
 import com.bussiness.curemegptapp.ui.viewModel.main.PromptViewModel
 import java.util.Calendar
 
@@ -126,8 +127,7 @@ fun OpenChatScreen(navController: NavHostController,from: String ?= "",
         if (messages.isNotEmpty() && shouldNavigate) {
 
             val handle = navController.currentBackStackEntry?.savedStateHandle
-            val hasMyself = selectedUser?.name?.contains("(Myself)")
-
+            val hasMyself = selectedUser?.relationship?.contains("Myself",true)
             handle?.set("chatId", 0)
             handle?.set("familyMemberId", if(hasMyself == true) 0 else selectedUser?.id ?: 0)
             handle?.set("textMessage", viewModel.getMessage())
@@ -234,8 +234,6 @@ fun OpenChatScreen(navController: NavHostController,from: String ?= "",
                             }
 
                             Spacer(modifier = Modifier.height(24.dp))
-
-                            // ✅ FIXED: UI for "Ask for" and Dropdown
                             Column(modifier = Modifier.padding(horizontal = 10.dp)) {
                                 Surface(
                                     modifier = Modifier
@@ -320,9 +318,7 @@ fun OpenChatScreen(navController: NavHostController,from: String ?= "",
                                     }
                                 }
                             }
-
                             Spacer(modifier = Modifier.height(16.dp))
-
                             GradientRedButton(
                                 text = "New Case Chat",
                                 icon = R.drawable.page_img,
@@ -333,17 +329,34 @@ fun OpenChatScreen(navController: NavHostController,from: String ?= "",
                                 gradientColors = listOf(Color(0xFF4338CA), Color(0xFF211C64)),
                                 onClick = { showCaseDialog = true }
                             )
-
                             Spacer(modifier = Modifier.height(24.dp))
-                        } // End of First Item
+                        }
 
-                        // ✅ FIXED: items() call is now OUTSIDE the item {} block
+
                         items(questionsList) { question ->
                             QuestionCard(
                                 question = question.question,
                                 isHealthQuestion = true,
                                 onClick = {
-                                    navController.navigate(AppDestination.ChatDataScreen)
+                                    val message = ChatMessage(
+                                        text = question.question,
+                                        isUser = true
+                                    )
+                                    val handle = navController.currentBackStackEntry?.savedStateHandle
+                                    val hasMyself = selectedUser?.relationship?.contains("Myself",true)
+                                    handle?.set("chatId", 0)
+                                    handle?.set("familyMemberId", if(hasMyself == true) 0 else selectedUser?.id ?: 0)
+                                    handle?.set("textMessage",message)
+                                    handle?.set("type", "normal")
+                                    handle?.set("familyList", familyList)
+
+                                    navController.navigate(AppDestination.ChatDataScreen) {
+                                        popUpTo("openChatScreen") { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                    shouldNavigate = false
+
                                 }
                             )
                             Spacer(modifier = Modifier.height(12.dp))

@@ -19,6 +19,7 @@ import com.bussiness.curemegptapp.apimodel.profilemodel.DeleteMedicalDocRequest
 import com.bussiness.curemegptapp.apimodel.profilemodel.UserProfileResponse
 import com.bussiness.curemegptapp.apimodel.scheduleAppointment.AppointmentTypeModel
 import com.bussiness.curemegptapp.apimodel.scheduleAppointment.FamilyModel
+import com.bussiness.curemegptapp.data.model.ChatMessage
 import com.bussiness.curemegptapp.data.model.ProfileData
 import com.bussiness.curemegptapp.ui.viewModel.main.FamilyMember
 import com.google.gson.JsonObject
@@ -293,7 +294,7 @@ interface Repository {
          type: RequestBody,
          chatId: RequestBody?,
          profile_image: MultipartBody.Part?
-    ) : Flow<NetworkResult<String>>
+    ) : Flow<NetworkResult<ChatMessage>>
 
     suspend fun getPromptQuestions() : Flow<NetworkResult<PromptQuestionResponse>>
 }

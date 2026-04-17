@@ -28,6 +28,7 @@ import com.bussiness.curemegptapp.apimodel.profilemodel.DeleteMedicalDocRequest
 import com.bussiness.curemegptapp.apimodel.profilemodel.UserProfileResponse
 import com.bussiness.curemegptapp.apimodel.scheduleAppointment.AppointmentTypeModel
 import com.bussiness.curemegptapp.apimodel.scheduleAppointment.FamilyModel
+import com.bussiness.curemegptapp.data.model.ChatMessage
 import com.bussiness.curemegptapp.data.model.ProfileData
 import com.bussiness.curemegptapp.ui.viewModel.main.Document
 import com.bussiness.curemegptapp.ui.viewModel.main.FamilyMember
@@ -1792,32 +1793,74 @@ class RepositoryImpl @Inject constructor(
     }
 
     override suspend fun getChatResponse(
-        familyMemberId: RequestBody?, message: RequestBody, type: RequestBody,
-        chatId: RequestBody?, profile_image: MultipartBody.Part?
-    ) : Flow<NetworkResult<String>> = flow {
+        familyMemberId: RequestBody?,
+        message: RequestBody,
+        type: RequestBody,
+        chatId: RequestBody?,
+        profile_image: MultipartBody.Part?
+    ): Flow<NetworkResult<ChatMessage>> = flow {
+
         try {
-            val response = api.getChatResponse(familyMemberId,message,type,chatId,profile_image)
+
+            val response = api.getChatResponse(
+                familyMemberId,
+                message,
+                type,
+                chatId,
+                profile_image
+            )
+
             if (response.isSuccessful) {
+
                 val respBody = response.body()
+
                 if (respBody != null) {
+
                     if (respBody.has("success") && respBody.get("success").asBoolean) {
+
                         val dataObj = respBody.getAsJsonObject("data")
-                        if (dataObj != null && dataObj.has("message")) {
-                            val message = dataObj.get("message").asString
-                            emit(NetworkResult.Success(message))
+
+                        if (dataObj != null) {
+
+                            val messageId = dataObj.get("message_id")?.asString
+                                ?: java.util.UUID.randomUUID().toString()
+
+                            val chatIdValue = dataObj.get("chat_id")?.asInt ?: 0
+
+                            val messageText = dataObj.get("message")?.asString
+
+                            val actionRequired = dataObj.getAsJsonObject("meta")
+                                ?.get("action_required")
+                                ?.asBoolean ?: false
+
+                            val chatMessage = ChatMessage(
+                                id = messageId,
+                                chatId = chatIdValue,
+                                text = messageText,
+                                severity = actionRequired,
+                                isUser = false
+                            )
+
+                            emit(NetworkResult.Success(chatMessage))
+
                         } else {
-                            emit(NetworkResult.Error("Message not found in data"))
+                            emit(NetworkResult.Error("Data object not found"))
                         }
-                    //  emit(NetworkResult.Success(respBody.get("message").asString))
+
                     } else {
-                        emit(NetworkResult.Error(respBody.get("message").asString))
+                        val errorMsg = respBody.get("message")?.asString
+                            ?: AppConstant.serverError
+                        emit(NetworkResult.Error(errorMsg))
                     }
+
                 } else {
                     emit(NetworkResult.Error(AppConstant.serverError))
                 }
+
             } else {
                 emit(NetworkResult.Error(AppConstant.serverError))
             }
+
         } catch (e: Exception) {
             e.printStackTrace()
             emit(NetworkResult.Error(AppConstant.serverError))

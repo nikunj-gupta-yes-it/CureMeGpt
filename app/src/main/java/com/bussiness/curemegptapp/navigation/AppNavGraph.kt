@@ -104,7 +104,6 @@ fun AppNavGraph(navController: NavHostController,modifier : Modifier = Modifier)
 
             composable<AppDestination.ChatDataScreen> {
                 ChatDataScreen(navController)
-
             }
 
             composable(
