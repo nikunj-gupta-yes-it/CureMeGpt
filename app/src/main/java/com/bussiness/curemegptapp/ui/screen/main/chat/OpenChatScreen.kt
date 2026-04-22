@@ -1,6 +1,7 @@
 package com.bussiness.curemegptapp.ui.screen.main.chat
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -74,6 +75,7 @@ import com.bussiness.curemegptapp.ui.theme.gradientBrush
 import com.bussiness.curemegptapp.ui.viewModel.main.ChatViewModel
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.ui.platform.LocalContext
 import com.bussiness.curemegptapp.apimodel.chatModel.FamilyDetails
 import com.bussiness.curemegptapp.data.model.ChatMessage
 import com.bussiness.curemegptapp.ui.viewModel.main.PromptViewModel
@@ -88,16 +90,22 @@ fun OpenChatScreen(navController: NavHostController,from: String ?= "",
     var selectedUser by remember { mutableStateOf<FamilyDetails?>(null) }
     var showUserDropdown by remember { mutableStateOf(false) }
     var showCaseDialog by remember { mutableStateOf(false) }
-
+    val context = LocalContext.current
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    var showRenameSheet by remember { mutableStateOf(false) }
+    var chatToRename by remember { mutableStateOf<Pair<String, String>?>(null) }
+
+
 
     val chatViewModel: ChatViewModel = hiltViewModel()
     val chatInputState by chatViewModel.uiState.collectAsState()
     val messages by chatViewModel.messages.collectAsState()
 
     var shouldNavigate by remember { mutableStateOf(false) }
+    var showDrawer by remember { mutableStateOf(false) }
 
+    val chatHistoryList by viewModel.historyChatList.collectAsState()
 
     val response by viewModel.promptQuestions.collectAsState()
     val familyList = response.family_details
@@ -122,6 +130,11 @@ fun OpenChatScreen(navController: NavHostController,from: String ?= "",
         }
     }
 
+    LaunchedEffect(showDrawer) {
+        if (showDrawer) {
+            viewModel.getUserChatHistoryList()
+        }
+    }
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty() && shouldNavigate) {
@@ -143,7 +156,28 @@ fun OpenChatScreen(navController: NavHostController,from: String ?= "",
         }
     }
 
-    var showDrawer by remember { mutableStateOf(false) }
+
+    if (showRenameSheet && chatToRename != null) {
+        RenameChatBottomSheet(
+            id = chatToRename!!.first,
+            currentName = chatToRename!!.second,
+            onDismiss = { showRenameSheet = false },
+            onSave = { newName ->
+                viewModel.renameChat(chatToRename!!.first,newName, success = {
+//                    chatHistoryList.forEach {
+//                       if(it.id.toString() == chatToRename!!.first){
+//                           it.title = newName
+//                           showDrawer = false
+//                           Toast.makeText(context,"Chat Name Renamed Successfully",Toast.LENGTH_LONG).show()
+//                       }
+//                    }
+                })
+                showDrawer = false
+                showRenameSheet = false
+            }
+        )
+    }
+
 
     BackHandler {
         if (from == "auth") {
@@ -170,6 +204,20 @@ fun OpenChatScreen(navController: NavHostController,from: String ?= "",
                 onUserChange = {},
                 onClickNewCaseChat = {
                     showCaseDialog = true
+                },
+                familyList = familyList,
+                chatHistory = chatHistoryList,
+                onRenameClick = { id, newName ->
+                    chatToRename = id to newName
+                    showRenameSheet = true
+                },
+                onShareClick = {
+
+                }, onDeleteClick = { id->
+                      viewModel.deleteChat(id, {
+                            Toast.makeText(context,"Chat Deleted Successfully",Toast.LENGTH_LONG).show()
+                            showDrawer = false
+                      })
                 }
             )
         }
@@ -379,11 +427,17 @@ fun OpenChatScreen(navController: NavHostController,from: String ?= "",
                     }
                 }
 
-                // ✅ CASE DIALOG
-                if (showCaseDialog) {
+            if (showCaseDialog) {
                     CaseDialog(
                         onDismiss = { showCaseDialog = false },
                         onConfirm = {
+                            val handle = navController.currentBackStackEntry?.savedStateHandle
+                            val hasMyself = selectedUser?.relationship?.contains("Myself",true)
+                            handle?.set("chatId", 0)
+                            handle?.set("familyMemberId", if(hasMyself == true) 0 else selectedUser?.id ?: 0)
+                            handle?.set("textMessage", viewModel.getMessage())
+                            handle?.set("type", "case")
+                            handle?.set("familyList", familyList)
                             navController.navigate(AppDestination.ChatDataScreen)
                             selectedUser = familyList.firstOrNull()
                             showCaseDialog = false
@@ -424,7 +478,6 @@ fun QuestionCard(question: String, isHealthQuestion: Boolean,onClick:()->Unit) {
                 Image(
                     painter = painterResource(R.drawable.ic_g_icon),
                     contentDescription = null,
-
                     modifier = Modifier.size(51.dp).align(alignment = Alignment.CenterVertically)
                 )
             }

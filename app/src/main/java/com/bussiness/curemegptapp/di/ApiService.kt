@@ -450,7 +450,24 @@ interface ApiService {
         ) : Response<GsonJsonObject>
 
 
-    @POST("get_prompt_questions")
+     @POST("get_prompt_questions")
      suspend fun getPromptQuestions() : Response<GsonJsonObject>
+
+     @POST("user_chat_list")
+     suspend fun getUserChatList() : Response<GsonJsonObject>
+
+     @POST("rename_chat")
+     @FormUrlEncoded
+     suspend fun renameChat(
+         @Field("chat_id") chatId :Int,
+         @Field("title") title :String
+     ) : Response<GsonJsonObject>
+
+     @POST("delete_chat")
+     @FormUrlEncoded
+     suspend fun deleteChat(
+         @Field("chat_id") chatId :Int
+     ) : Response<GsonJsonObject>
+
 
 }

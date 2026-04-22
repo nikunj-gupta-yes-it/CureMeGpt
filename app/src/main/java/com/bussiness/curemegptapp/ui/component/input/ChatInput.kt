@@ -30,6 +30,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -58,6 +60,7 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -72,6 +75,7 @@ import com.airbnb.lottie.compose.LottieConstants
 import com.airbnb.lottie.compose.rememberLottieComposition
 import com.bussiness.curemegptapp.R
 import com.bussiness.curemegptapp.data.model.ChatMessage
+import com.bussiness.curemegptapp.data.model.PdfData
 import com.bussiness.curemegptapp.ui.theme.AppGradientColors
 import com.bussiness.curemegptapp.ui.theme.gradientBrush
 import com.bussiness.curemegptapp.ui.viewModel.main.ChatDataViewModel
@@ -482,29 +486,34 @@ fun CommunityChatSection(
 
                         // Show text if any
                         if (!message.text.isNullOrBlank()) {
-                            Box(
-                                modifier = Modifier
-                                    .background(
-                                        gradientBrush,
-                                        RoundedCornerShape(16.dp)
-                                    ).fillMaxWidth()
-                                    .padding(12.dp)
-                            ) {
-                                Text(
-                                    text = message.text,
-                                    color = Color.White,
-                                    fontSize = 14.sp,
-                                    fontFamily = FontFamily(Font(R.font.urbanist_regular))
+                            Column {
+                                Box(
+                                    modifier = Modifier
+                                        .background(
+                                            gradientBrush,
+                                            RoundedCornerShape(16.dp)
+                                        ).fillMaxWidth()
+                                        .padding(12.dp)
+                                ) {
+                                    Text(
+                                        text = message.text,
+                                        color = Color.White,
+                                        fontSize = 14.sp,
+                                        fontFamily = FontFamily(Font(R.font.urbanist_regular))
+                                    )
+                                }
+
+                                UserMessageActions(
+                                    onCopy = { message.text?.let { viewModel.copyMessage(it) } },
+                                    onEdit = { viewModel.editMessage(message.id) },
+                                    modifier = Modifier.align(Alignment.End)
                                 )
                             }
+
                         }
 
                         // Action buttons
-                        UserMessageActions(
-                            onCopy = { message.text?.let { viewModel.copyMessage(it) } },
-                            onEdit = { viewModel.editMessage(message.id) },
-                            modifier = Modifier.align(Alignment.End)
-                        )
+
                     }
                 }
             } else {
@@ -538,23 +547,11 @@ fun CommunityChatSection(
                                 Spacer(modifier = Modifier.width(2.dp))
                                 Row(
                                     modifier = Modifier
-//                                        .background(
-//                                            Color(0xFFF5F5F5),
-//                                            RoundedCornerShape(16.dp)
-//                                        )
+
                                         .padding(8.dp),
 
                                 ) {
-//                                    CircularProgressIndicator(
-//                                        modifier = Modifier.size(16.dp),
-//                                        strokeWidth = 2.dp,
-//                                        color = Color(0xFF6B4EFF)
-//                                    )
-//                                    Text(
-//                                        text = "Typing...",
-//                                        color = Color.Gray,
-//                                        fontSize = 14.sp
-//                                    )
+
                                     val composition by rememberLottieComposition(
                                         LottieCompositionSpec.RawRes(R.raw.heartbeat)
                                     )
@@ -639,6 +636,52 @@ fun CommunityChatSection(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+
+@Composable
+fun PdfPreviewCard(
+    pdf: PdfData,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFFF2F2F2))
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.PictureAsPdf,
+            contentDescription = "PDF",
+            tint = Color.Red,
+            modifier = Modifier.size(32.dp)
+        )
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                text = pdf.name ?: "Document.pdf",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.Black,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            pdf.name?.let {
+                Text(
+                    text = it,
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
             }
         }
     }

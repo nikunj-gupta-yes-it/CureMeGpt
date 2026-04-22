@@ -52,6 +52,18 @@ class ChatViewModel @Inject constructor(
         _uiState.update { it.copy(message = newText.take(1000)) }
     }
 
+    fun clearImages() {
+        _uiState.update { currentState ->
+            currentState.copy(images = emptyList())
+        }
+    }
+
+    fun clearPdfs() {
+        _uiState.update { currentState ->
+            currentState.copy(pdfs = emptyList())
+        }
+    }
+
     fun addImage(uri: Uri) {
         _uiState.update { it.copy(images = it.images + uri) }
     }

@@ -34,8 +34,9 @@ fun InlineAttachmentPreview(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 6.dp)
+            .padding(top = 12.dp,start = 6.dp, end = 6.dp)
             .wrapContentHeight(),
+
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

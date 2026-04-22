@@ -27,8 +27,12 @@ import com.bussiness.curemegptapp.apimodel.scheduleAppointment.FamilyModel
 import com.bussiness.curemegptapp.repository.NetworkResult
 import com.bussiness.curemegptapp.repository.Repository
 import com.bussiness.curemegptapp.util.LoaderManager
+import com.bussiness.curemegptapp.util.UriToRequestBody
+import dagger.hilt.android.internal.Contexts.getApplication
 import kotlinx.coroutines.flow.collectLatest
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 
 
@@ -49,6 +53,7 @@ class ChatDataViewModel @Inject constructor(
     val repository: Repository
 ) : ViewModel() {
 
+    private lateinit var context: Context
 
     private val _chatArgs = MutableStateFlow(ChatScreenArgs())
     val chatArgs: StateFlow<ChatScreenArgs> = _chatArgs
@@ -80,12 +85,15 @@ class ChatDataViewModel @Inject constructor(
 
 
     fun setChatArgs(
+        context: Context,
         chatId: Int,
         familyMemberId: Int,
         chatMessage: ChatMessage?,
         type: String,
         familyList: List<FamilyDetails>
     ) {
+        this.context = context
+
         _chatArgs.value = ChatScreenArgs(
             chatId = chatId,
             familyMemberId = familyMemberId,
@@ -144,6 +152,15 @@ class ChatDataViewModel @Inject constructor(
         _uiState.update { it.copy(images = it.images + uri) }
     }
 
+
+    fun clearImages() {
+        _uiState.update { it.copy(images = emptyList()) }
+    }
+
+    fun clearPdfs() {
+        _uiState.update { it.copy(pdfs = emptyList()) }
+    }
+
     fun removeImage(uri: Uri) {
         _uiState.update { it.copy(images = it.images - uri) }
     }
@@ -191,14 +208,16 @@ class ChatDataViewModel @Inject constructor(
 
         _uiState.update { ChatInputState1(selectedProfile = s.selectedProfile) }
 
-        if(!s.message.isNullOrEmpty()) {
+
             sendInitialChatRequest(
                 s.message.toString(),
                 chatId = _chatArgs.value.chatId,
                 familyMemberId = _chatArgs.value.familyMemberId,
-                type = _chatArgs.value.type
+                type = _chatArgs.value.type,
+                images = s.images,
+                pdfs = s.pdfs
             )
-        }
+
 
     }
 
@@ -370,6 +389,25 @@ class ChatDataViewModel @Inject constructor(
          pdfs: List<PdfData> = emptyList()
     ) {
         if (chatId == 0 && type == "normal") {
+            when {
+                images.isNotEmpty() -> {
+                    _messages.update { list ->
+                        list + ChatMessage(
+                            images = images,
+                            isUser = true
+                        )
+                    }
+                }
+
+                pdfs.isNotEmpty() -> {
+                    _messages.update { list ->
+                        list + ChatMessage(
+                            pdfs = pdfs,
+                            isUser = true
+                        )
+                    }
+                }
+            }
 
             message?.let {
                 _messages.update { list ->
@@ -380,13 +418,12 @@ class ChatDataViewModel @Inject constructor(
                 }
             }
 
-
             sendInitialChatRequest(
                 message = message,
                 chatId = chatId,
                 familyMemberId = familyMemberId,
                 type = type,
-                images = image,
+                images = images,
                 pdfs = pdfs
             )
         }
@@ -402,6 +439,10 @@ class ChatDataViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
 
+            if (message.isNullOrBlank() && images.isEmpty() && pdfs.isEmpty()) {
+                return@launch
+            }
+
             val messageBody = message?.toRequestBody("text/plain".toMediaTypeOrNull())
                 ?: return@launch
 
@@ -412,6 +453,26 @@ class ChatDataViewModel @Inject constructor(
             Log.d("TESTING_CHAT_ID","CHAT ID VALUE IS"+ chatId)
             val familyBody = if (familyMemberId == 0) null
             else familyMemberId.toString().toRequestBody("text/plain".toMediaTypeOrNull())
+            var  profileImage : MultipartBody.Part? = null
+
+            if(images.size > 0){
+
+                UriToRequestBody.uriToMultipart(context, images.first(), "file")?.let {
+                    profileImage = it
+                }
+
+            }else{
+                pdfs.firstOrNull()?.uri?.let { uri ->
+                    UriToRequestBody.uriToMultipart(
+                        context = context,
+                        uri = uri,
+                          "file"
+                    )?.let {
+                        profileImage = it
+                    }
+                }
+
+            }
 
             LoaderManager.show()
             repository.getChatResponse(
@@ -419,19 +480,16 @@ class ChatDataViewModel @Inject constructor(
                 message = messageBody,
                 type = typeBody,
                 chatId = chatIdBody,
-                profile_image = null
+                profile_image = profileImage
             ).collect { result ->
 
                 when (result) {
 
                     is NetworkResult.Success -> {
-
                         _chatArgs.value = _chatArgs.value.copy(
                             chatId = result.data?.chatId?.toInt() ?: 0
                         )
-
                         _messages.update { (it + result.data) as List<ChatMessage> }
-
                         LoaderManager.hide()
                     }
 

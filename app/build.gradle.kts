@@ -90,7 +90,7 @@ dependencies {
     implementation(libs.androidx.compose.runtime)
     implementation(libs.androidx.runtime)
 
-
+    implementation("androidx.compose.material:material-icons-extended")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

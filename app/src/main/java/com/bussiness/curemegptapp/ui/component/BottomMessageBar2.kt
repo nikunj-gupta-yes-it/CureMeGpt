@@ -75,36 +75,40 @@ import timber.log.Timber
 
 @Composable
 fun BottomMessageBar2(
-    modifier: Modifier = Modifier,
-    state: ChatInputState1 = ChatInputState1(),
-    viewModel: ChatDataViewModel = hiltViewModel(),
-    familyList: List<FamilyDetails> = emptyList<FamilyDetails>(),
+    modifier: Modifier =  Modifier,
+    state: ChatInputState1 =   ChatInputState1(), viewModel: ChatDataViewModel =  hiltViewModel(),
+    familyList: List<FamilyDetails> =  emptyList<FamilyDetails>(),
     familyMemberId: Int,
     onSendClicked: () -> Unit = { }
 ) {
 
     val context = LocalContext.current
+
     val profiles by viewModel.profiles.collectAsState()
+
     val chatArgs by viewModel.chatArgs.collectAsState()
+
     val familyMemberId = chatArgs.familyMemberId
     val familyList = chatArgs.familyList
     val selectedMember = familyList.find { it.id == familyMemberId } ?: familyList.find {
         it.relationship.equals("myself", ignoreCase = true)
     }
 
-    val fileLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-            uri?.let {
-                val mimeType = context.contentResolver.getType(it)
-                if (mimeType?.startsWith("image/") == true) {
-                    viewModel.addImage(it)
-                }
-                else if (mimeType == "application/pdf") {
-                    viewModel.addPdf(it)
-                }
+    val fileLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let {
+            val mimeType = context.contentResolver.getType(it)
+
+            if (mimeType?.startsWith("image/") == true) {
+                viewModel.clearImages()
+                viewModel.addImage(it)
+            } else if (mimeType == "application/pdf") {
+                viewModel.clearPdfs()
+                viewModel.addPdf(it)
             }
+        }
     }
-
-
 
     var isRecording by remember { mutableStateOf(false) }
     var showText by remember { mutableStateOf(true) }
@@ -112,7 +116,6 @@ fun BottomMessageBar2(
     var rmsValue by remember { mutableStateOf(0f) }
     var voiceText by remember { mutableStateOf("") }     // speech result
     var isMessageEmpty = state.message.isBlank() && recognizedText.isBlank()
-
     val speechRecognizer = remember {
         SpeechRecognizer.createSpeechRecognizer(context)
     }
@@ -325,6 +328,7 @@ fun BottomMessageBar2(
 
                                                 // update ViewModel (IMPORTANT)
                                                 viewModel.setChatArgs(
+                                                    context,
                                                     chatId = viewModel.chatArgs.value.chatId,
                                                     familyMemberId = member.id,
                                                     chatMessage = viewModel.chatArgs.value.chatMessage,

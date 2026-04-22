@@ -5,6 +5,7 @@ import android.util.Log
 import com.bussiness.curemegptapp.apimodel.OnBoardingModel.OnboardingItem
 import com.bussiness.curemegptapp.apimodel.OnBoardingModel.OnboardingResponse
 import com.bussiness.curemegptapp.apimodel.QuestionAnswer
+import com.bussiness.curemegptapp.apimodel.chatModel.ChatHistoryItem
 import com.bussiness.curemegptapp.apimodel.chatModel.FamilyDetails
 import com.bussiness.curemegptapp.apimodel.chatModel.PromptQuestionResponse
 import com.bussiness.curemegptapp.apimodel.familyProfile.FamilyMemberResponse
@@ -1846,7 +1847,6 @@ class RepositoryImpl @Inject constructor(
                         } else {
                             emit(NetworkResult.Error("Data object not found"))
                         }
-
                     } else {
                         val errorMsg = respBody.get("message")?.asString
                             ?: AppConstant.serverError
@@ -1905,6 +1905,105 @@ class RepositoryImpl @Inject constructor(
                 emit(NetworkResult.Error(AppConstant.serverError))
             }
         } catch (e: Exception) {
+            e.printStackTrace()
+            emit(NetworkResult.Error(AppConstant.serverError))
+        }
+    }
+
+    override suspend fun getUserChatHistoryList(): Flow<NetworkResult<MutableList<ChatHistoryItem>>> = flow {
+        try {
+            val response = api.getUserChatList()
+            if (response.isSuccessful) {
+                val respBody = response.body()
+                if (respBody != null) {
+                    if (respBody.has("success") && respBody.get("success").asBoolean) {
+                        val dataObj = respBody.getAsJsonObject("data")
+                        if (dataObj != null ) {
+                            val chatHistoryList = dataObj.getAsJsonArray("data")
+                             val historyList = mutableListOf<ChatHistoryItem>()
+
+                            chatHistoryList.forEach { element ->
+                                try {
+                                    val obj = element.asJsonObject
+                                    val item = Gson().fromJson(obj, ChatHistoryItem::class.java)
+
+                                    if (item != null) {
+                                        historyList.add(item)
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }
+                        historyList.reverse()
+
+                            emit(NetworkResult.Success(historyList))
+                        }
+                        else {
+                            emit(NetworkResult.Error("Message not found in data"))
+                        }
+
+                        //  emit(NetworkResult.Success(respBody.get("message").asString))
+                    } else {
+                        emit(NetworkResult.Error(respBody.get("message").asString))
+                    }
+                } else {
+                    emit(NetworkResult.Error(AppConstant.serverError))
+                }
+            } else {
+                emit(NetworkResult.Error(AppConstant.serverError))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emit(NetworkResult.Error(AppConstant.serverError))
+        }
+    }
+
+    override suspend fun renameChat(
+        chatId: Int,
+        title: String
+    ) : Flow<NetworkResult<String>> = flow {
+        try {
+            val response = api.renameChat(chatId,title)
+            if (response.isSuccessful) {
+                val respBody = response.body()
+                if (respBody != null) {
+                    if (respBody.has("success") && respBody.get("success").asBoolean) {
+                        emit(NetworkResult.Success(respBody.get("message").asString))
+                    } else {
+                        emit(NetworkResult.Error(respBody.get("message").asString))
+                    }
+                } else {
+                    emit(NetworkResult.Error(AppConstant.serverError))
+                }
+            } else {
+                emit(NetworkResult.Error(AppConstant.serverError))
+            }
+        }
+        catch (e: Exception){
+            e.printStackTrace()
+            emit(NetworkResult.Error(AppConstant.serverError))
+        }
+    }
+
+    override suspend fun deleteChat(chatId: Int): Flow<NetworkResult<String>> = flow{
+        try {
+            val response = api.deleteChat(chatId)
+            if (response.isSuccessful) {
+                val respBody = response.body()
+                if (respBody != null) {
+                    if (respBody.has("success") && respBody.get("success").asBoolean) {
+                        emit(NetworkResult.Success(respBody.get("message").asString))
+                    } else {
+                        emit(NetworkResult.Error(respBody.get("message").asString))
+                    }
+                } else {
+                    emit(NetworkResult.Error(AppConstant.serverError))
+                }
+            } else {
+                emit(NetworkResult.Error(AppConstant.serverError))
+            }
+        }
+        catch (e: Exception){
             e.printStackTrace()
             emit(NetworkResult.Error(AppConstant.serverError))
         }

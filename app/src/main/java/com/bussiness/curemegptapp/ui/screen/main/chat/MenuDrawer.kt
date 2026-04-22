@@ -48,56 +48,40 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bussiness.curemegptapp.R
+import com.bussiness.curemegptapp.apimodel.chatModel.ChatHistoryItem
+import com.bussiness.curemegptapp.apimodel.chatModel.FamilyDetails
+import com.bussiness.curemegptapp.apimodel.scheduleAppointment.FamilyModel
 import com.bussiness.curemegptapp.ui.component.GradientRedButton
 import com.bussiness.curemegptapp.ui.screen.main.schedule.EditDeleteMenu
 import com.bussiness.curemegptapp.ui.theme.gradientBrush
+import android.util.Log
 
 @Composable
-fun MenuDrawer(onDismiss: () -> Unit, selectedUser: String, onUserChange: (String) -> Unit,onClickNewCaseChat:()-> Unit) {
+fun MenuDrawer(
+               onDismiss: () -> Unit,
+               selectedUser: String, onUserChange: (FamilyDetails) -> Unit,
+               onClickNewCaseChat:()-> Unit,
+               familyList: List<FamilyDetails>,
+               chatHistory : MutableList<ChatHistoryItem>,
+               onRenameClick: (id :String, title :String) -> Unit,
+               onDeleteClick: (id:String) -> Unit,
+               onShareClick :() ->Unit
+               ) {
+
+    Log.d("ChatHistory", "chatHistory size = ${chatHistory.size}")
+
+    val caseHistory = remember(chatHistory) {
+        chatHistory.toMutableList()
+    }
+
     var showChatHistory by remember { mutableStateOf(false) }
     var showCaseHistory by remember { mutableStateOf(false) }
     var selectedChatIndex by remember { mutableStateOf<Int?>(null) }
-
-
-
-    // Define case history for each user
-    val userCaseHistoryMap = mapOf(
-        stringResource(R.string.james_myself_user) to listOf(
-            stringResource(R.string.toothache_treatment_case),
-            stringResource(R.string.annual_checkup_case),
-            stringResource(R.string.headache_consultation_case),
-            stringResource(R.string.stomach_issue_case),
-            stringResource(R.string.dental_cleaning_case),
-            stringResource(R.string.general_health_review_case)
-        ),
-        stringResource(R.string.rose_logan_spouse_user) to listOf(
-            stringResource(R.string.pregnancy_checkup_case),
-            stringResource(R.string.migraine_treatment_case),
-            stringResource(R.string.postpartum_recovery_case),
-            stringResource(R.string.skin_consultation_case),
-            stringResource(R.string.sleep_disorder_case),
-            stringResource(R.string.stress_management_case)
-        ),
-        stringResource(R.string.peter_logan_son_user) to listOf(
-            stringResource(R.string.childhood_allergy_test_case),
-            stringResource(R.string.growth_monitoring_case),
-            stringResource(R.string.immunization_update_case),
-            stringResource(R.string.asthma_management_case),
-            stringResource(R.string.pediatric_checkup_case),
-            stringResource(R.string.nutrition_counseling_case)
-        )
-    )
-
-    // Get case history based on selected user
-    val caseHistory = userCaseHistoryMap[selectedUser] ?: listOf(stringResource(R.string.no_case_history_available))
+    val userCaseHistoryMap = familyList
 
     var searchQuery by remember { mutableStateOf("") }
     var showUserDropdown1 by remember { mutableStateOf(false) }
-    val users = listOf(
-        stringResource(R.string.james_myself_user),
-        stringResource(R.string.rose_logan_spouse_user),
-        stringResource(R.string.peter_logan_son_user)
-    )
+    val users = familyList
     Box(
         modifier = Modifier
             .fillMaxSize().clip(shape = RoundedCornerShape(topStart = 40.dp,bottomStart = 40.dp))
@@ -268,9 +252,14 @@ fun MenuDrawer(onDismiss: () -> Unit, selectedUser: String, onUserChange: (Strin
 
                     Surface(
                         modifier = Modifier
-                            .fillMaxWidth().clickable(interactionSource = remember { MutableInteractionSource() },
+                            .fillMaxWidth().clickable(interactionSource = remember {
+                                MutableInteractionSource()
+                                                                                   },
+
                                 indication = null){
-                                showUserDropdown1 = true
+
+                                showUserDropdown1 = !showUserDropdown1
+
                             }
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         shape = RoundedCornerShape(30.dp),
@@ -308,9 +297,9 @@ fun MenuDrawer(onDismiss: () -> Unit, selectedUser: String, onUserChange: (Strin
                                             .clickable(interactionSource = remember { MutableInteractionSource() },
                                                 indication = null
                                             ) {
-
+                                                showUserDropdown1 = !showUserDropdown1
                                                 onUserChange(user)
-                                                showUserDropdown1 = false
+
                                             }
                                             .padding(horizontal = 16.dp)
                                     ) {
@@ -321,15 +310,15 @@ fun MenuDrawer(onDismiss: () -> Unit, selectedUser: String, onUserChange: (Strin
                                         ) {
                                             // User name with proper styling
                                             Text(
-                                                text = user,
+                                                text = user.name,
                                                 fontSize = 16.sp,
                                                 fontFamily = FontFamily(Font(R.font.urbanist_regular)),
-                                                fontWeight = if (user == selectedUser) FontWeight.Medium else FontWeight.Normal,
-                                                color = if (user == selectedUser) Color(0xFF4338CA) else Color(0xFF374151)
+                                                fontWeight = if (user.name == selectedUser) FontWeight.Medium else FontWeight.Normal,
+                                                color = if (user.name == selectedUser) Color(0xFF4338CA) else Color(0xFF374151)
                                             )
 
                                             // Tick icon only for selected user
-                                            if (user == selectedUser) {
+                                            if (user.name == selectedUser) {
                                                 Image(
                                                     painter = painterResource(id = R.drawable.ic_tick_icon),
                                                     contentDescription = stringResource(R.string.selected_icon_description),
@@ -343,12 +332,7 @@ fun MenuDrawer(onDismiss: () -> Unit, selectedUser: String, onUserChange: (Strin
                             }
                         }
                     }
-
-
-
                 }
-
-
 
                 // Chat History Items
                 if (showChatHistory) {
@@ -415,24 +399,14 @@ fun MenuDrawer(onDismiss: () -> Unit, selectedUser: String, onUserChange: (Strin
                                     contentDescription = stringResource(R.string.clock_icon_description),
                                     modifier = Modifier.size(31.dp)
                                 )
-                                Text(caseHistory[index], fontSize = 14.sp)
+                                Text(caseHistory[index].title?:"", fontSize = 14.sp)
                             }
-                       /*     IconButton(
-                                onClick = { },
-                                modifier = Modifier.size(26.dp)
-                            ) {
-                                Icon(
-                                    painter = painterResource( R.drawable.ic_horizontal_menu_icon),
-                                    contentDescription = stringResource(R.string.menu_icon_description),
-                                    tint = Color.Unspecified,
 
-                                    )
-                            }*/
                             RenameDeleteShareMenu(
                                 modifier = Modifier,
-                                onEditClick = { /*onEditClick()*/ },
+                                onEditClick = { onRenameClick(caseHistory.get(index).id?:"0",caseHistory.get(index).title?:"") },
                                 onShareClick = { /*onEditClick()*/ },
-                                onDeleteClick = {  /*onDeleteClick()*/ })
+                                onDeleteClick = {  onDeleteClick(caseHistory.get(index).id?:"0") })
                         }
                     }
                 }

@@ -86,6 +86,20 @@ fun BottomMessageBar1(
     val context = LocalContext.current
 
     // FILE PICKER
+//    val fileLauncher = rememberLauncherForActivityResult(
+//        ActivityResultContracts.OpenDocument()
+//    ) { uri: Uri? ->
+//        uri?.let {
+//            val mimeType = context.contentResolver.getType(it)
+//
+//            if (mimeType?.startsWith("image/") == true) {
+//                viewModel.addImage(it)
+//            } else if (mimeType == "application/pdf") {
+//                viewModel.addPdf(it)
+//            }
+//        }
+//    }
+
     val fileLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
@@ -93,8 +107,10 @@ fun BottomMessageBar1(
             val mimeType = context.contentResolver.getType(it)
 
             if (mimeType?.startsWith("image/") == true) {
+                viewModel.clearImages()
                 viewModel.addImage(it)
             } else if (mimeType == "application/pdf") {
+                viewModel.clearPdfs()
                 viewModel.addPdf(it)
             }
         }

@@ -63,11 +63,12 @@ fun ChatDataScreen(navController : NavHostController,
     val chatMessage = handle?.get<ChatMessage>("textMessage")
     val type = handle?.get<String>("type") ?: "normal"
     val familyList = handle?.get<List<FamilyDetails>>("familyList") ?: emptyList()
-
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
 
         viewModel.setChatArgs(
+            context = context,
             chatId = chatId,
             familyMemberId = familyMemberId,
             chatMessage = chatMessage,
@@ -76,6 +77,7 @@ fun ChatDataScreen(navController : NavHostController,
         )
 
         viewModel.onChatScreenOpened(
+
             chatId = chatId,
             type = type,
             message = chatMessage?.text,
@@ -91,7 +93,7 @@ fun ChatDataScreen(navController : NavHostController,
     val listState = rememberLazyListState()
     var showSwitchDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
-    val context = LocalContext.current
+
     var showDrawer by remember { mutableStateOf(false) }
     var selectedUser by remember { mutableStateOf("James (Myself)") }
     var showCaseDialog by remember { mutableStateOf(false) }
@@ -108,11 +110,21 @@ fun ChatDataScreen(navController : NavHostController,
                 onDismiss = { showDrawer = false },
                 selectedUser = selectedUser,
                 onUserChange = {
-                    selectedUser = it
+                    selectedUser = it.name
                     showDrawer = false
                 },
                 onClickNewCaseChat = {
                     showCaseDialog = true
+                },
+                familyList = familyList,
+                chatHistory = mutableListOf(),
+                onRenameClick = { id, newName ->
+
+                },
+                onShareClick = {
+
+                }, onDeleteClick = {
+
                 }
             )
         }
